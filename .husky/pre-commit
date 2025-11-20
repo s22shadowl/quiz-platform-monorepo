@@ -1,1 +1,1 @@
-npx lint-staged
+npm run lint --workspace=apps/web
