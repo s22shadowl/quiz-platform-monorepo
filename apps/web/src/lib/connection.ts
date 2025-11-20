@@ -87,6 +87,14 @@ export class ConnectionManager {
           });
         }
         break;
+      case "ANSWER":
+        if (this.isHost) {
+          const { option } = message.payload as { option: string };
+          import("./stores/gameStore").then(({ gameStore }) => {
+            gameStore.handleAnswer(senderId, option);
+          });
+        }
+        break;
     }
   }
 

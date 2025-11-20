@@ -27,7 +27,7 @@ function createGameStore() {
 
   const { subscribe, set, update } = writable<GameState>(initialState);
 
-  let timerInterval: ReturnType<typeof setInterval>;
+  let timerInterval: ReturnType<typeof setInterval> | undefined;
 
   return {
     subscribe,
@@ -77,6 +77,24 @@ function createGameStore() {
         if (!state.quiz) return state;
         const nextIndex = state.currentQuestionIndex + 1;
         if (nextIndex >= state.quiz.questions.length) {
+          // Auto-end game or wait for host? Let's wait for host to explicitly end,
+          // OR just show "End of Quiz" state.
+          // For now, let's transition to finished state directly via endGame logic to save history.
+          // But we can't call endGame() from here easily because it's inside update().
+          // Let's just return state and let the Host click "Finish" or handle it differently.
+          // Actually, let's just set it to finished here for now, but saving history might be tricky inside update if we want to reuse logic.
+          // Let's duplicate the history saving logic here or refactor.
+          // Refactoring to use a shared helper or just saving here.
+
+          import("../storage").then(({ storage }) => {
+            storage.saveHistory({
+              id: crypto.randomUUID(),
+              quizTitle: state.quiz!.title,
+              playedAt: Date.now(),
+              players: state.players,
+            });
+          });
+
           const finishedState = {
             ...state,
             status: "finished" as GameStatus,
@@ -98,6 +116,61 @@ function createGameStore() {
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
+    },
+
+    handleAnswer: (playerId: string, option: string) => {
+      update((state) => {
+        if (state.status !== "playing" || !state.currentQuestion) return state;
+
+        const isCorrect = option === state.currentQuestion.correctAnswer;
+        const points = isCorrect ? state.currentQuestion.points : 0;
+
+        const updatedPlayers = state.players.map((p) => {
+          if (p.id === playerId) {
+            return {
+              ...p,
+              score: p.score + points,
+              streak: isCorrect ? p.streak + 1 : 0,
+            };
+          }
+          return p;
+        });
+
+        // Sort players by score descending
+        updatedPlayers.sort((a, b) => b.score - a.score);
+
+        const newState = { ...state, players: updatedPlayers };
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+    },
+
+    endGame: () => {
+      update((state) => {
+        if (!state.quiz) return state;
+
+        // Save History
+        import("../storage").then(({ storage }) => {
+          storage.saveHistory({
+            id: crypto.randomUUID(),
+            quizTitle: state.quiz!.title,
+            playedAt: Date.now(),
+            players: state.players,
+          });
+        });
+
+        const finishedState = {
+          ...state,
+          status: "finished" as GameStatus,
+          currentQuestion: null,
+        };
+        connectionManager.broadcast({
+          type: "GAME_STATE",
+          payload: finishedState,
+        });
+        return finishedState;
+      });
+      clearInterval(timerInterval);
     },
 
     // Client Actions (Sync State)
