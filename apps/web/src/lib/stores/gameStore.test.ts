@@ -32,7 +32,7 @@ describe("gameStore", () => {
         correctAnswer: "A",
         points: 10,
         timeLimit: 10,
-        type: "multiple",
+        type: "choice",
       },
       {
         id: "q2",
@@ -41,7 +41,7 @@ describe("gameStore", () => {
         correctAnswer: "B",
         points: 20,
         timeLimit: 10,
-        type: "multiple",
+        type: "choice",
       },
     ],
   };
