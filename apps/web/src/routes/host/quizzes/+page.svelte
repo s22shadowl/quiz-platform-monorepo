@@ -76,14 +76,16 @@
               {quiz.questions.length} Questions
             </div>
             <div class="card-actions justify-end mt-4">
-              <button
-                class="btn btn-sm btn-ghost text-error"
-                on:click={() => deleteQuiz(quiz.id)}>Delete</button
+              <a href="/host/game/{quiz.id}" class="btn btn-primary btn-sm"
+                >Play</a
               >
-              <a href="/host/quizzes/{quiz.id}" class="btn btn-sm btn-secondary"
+              <a href="/host/quizzes/{quiz.id}" class="btn btn-ghost btn-sm"
                 >Edit</a
               >
-              <button class="btn btn-sm btn-accent">Host</button>
+              <button
+                class="btn btn-ghost btn-sm text-error"
+                on:click={() => deleteQuiz(quiz.id)}>Delete</button
+              >
             </div>
           </div>
         </div>

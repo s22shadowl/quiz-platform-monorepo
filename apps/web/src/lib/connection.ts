@@ -1,5 +1,6 @@
 import Peer, { type DataConnection } from "peerjs";
 import { connectionStore } from "./stores/connectionStore";
+import type { GameState } from "./stores/gameStore";
 
 export type MessageType = "JOIN" | "ANSWER" | "GAME_STATE" | "KICK";
 
@@ -16,6 +17,7 @@ export class ConnectionManager {
   constructor() {}
 
   async init(id?: string): Promise<string> {
+    this.isHost = !id; // If no ID provided, we are generating one -> Host
     return new Promise((resolve, reject) => {
       // Use a public PeerJS server for now, can be configured for self-hosted later
       this.peer = id ? new Peer(id) : new Peer();
@@ -65,7 +67,27 @@ export class ConnectionManager {
   private handleMessage(message: Message, senderId: string) {
     // Dispatch to store or event handlers
     console.log(`Message from ${senderId}:`, message);
-    // TODO: Integrate with game logic store
+
+    switch (message.type) {
+      case "JOIN": {
+        const { nickname } = message.payload as { nickname: string };
+        // Only Host handles JOIN
+        if (this.isHost) {
+          import("./stores/gameStore").then(({ gameStore }) => {
+            gameStore.addPlayer(senderId, nickname);
+          });
+        }
+        break;
+      }
+      case "GAME_STATE":
+        // Clients receive GAME_STATE
+        if (!this.isHost) {
+          import("./stores/gameStore").then(({ gameStore }) => {
+            gameStore.syncState(message.payload as GameState);
+          });
+        }
+        break;
+    }
   }
 
   async connectToHost(hostId: string) {
