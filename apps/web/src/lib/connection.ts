@@ -98,11 +98,26 @@ export class ConnectionManager {
     }
   }
 
-  async connectToHost(hostId: string) {
+  async connectToHost(hostId: string, nickname: string) {
     if (!this.peer) await this.init();
 
     const conn = this.peer!.connect(hostId);
-    this.handleIncomingConnection(conn);
+
+    return new Promise<void>((resolve, reject) => {
+      conn.on("open", () => {
+        this.handleIncomingConnection(conn);
+        // Send JOIN message immediately
+        this.send(hostId, { type: "JOIN", payload: { nickname } });
+        resolve();
+      });
+
+      conn.on("error", (err) => {
+        reject(err);
+      });
+
+      // Timeout if connection takes too long
+      setTimeout(() => reject(new Error("Connection timeout")), 5000);
+    });
   }
 
   broadcast(message: Message) {

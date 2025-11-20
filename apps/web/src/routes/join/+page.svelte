@@ -1,10 +1,12 @@
 <script lang="ts">
   import { connectionManager } from "$lib/connection"
   import { connectionStore } from "$lib/stores/connectionStore"
+  import { goto } from "$app/navigation"
 
   let roomId = ""
   let nickname = ""
   let isConnecting = false
+  let error = ""
 
   async function joinGame() {
     if (!roomId || !nickname) return
@@ -13,67 +15,75 @@
     connectionStore.setConnecting(true)
 
     try {
-      // TODO: Pass nickname in metadata when PeerJS supports it or send immediate JOIN message
-      await connectionManager.connectToHost(roomId)
-
-      // Send JOIN message
-      connectionManager.send(roomId, {
-        type: "JOIN",
-        payload: { nickname },
-      })
-
-      // Wait for connection confirmation or just redirect to waiting room
-      // For now, simple redirect if no error
-      // goto('/play'); // TODO: Create play page
-      alert("Connected! Waiting for host to start...")
-    } catch (err) {
-      console.error("Failed to join:", err)
-      alert("Failed to join room. Check ID and try again.")
-    } finally {
+      await connectionManager.connectToHost(roomId, nickname)
+      goto("/play")
+    } catch {
+      error = "Failed to connect. Check Room ID."
       isConnecting = false
-      connectionStore.setConnecting(false)
     }
   }
 </script>
 
 <div
-  class="container mx-auto p-4 max-w-md flex flex-col justify-center min-h-screen"
+  class="min-h-screen bg-base-200 flex items-center justify-center p-4 relative overflow-hidden"
 >
-  <div class="card bg-base-100 shadow-2xl">
+  <!-- Background Decoration -->
+  <div
+    class="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none"
+  >
+    <div
+      class="absolute top-10 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
+    ></div>
+    <div
+      class="absolute bottom-10 left-10 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"
+    ></div>
+  </div>
+
+  <div
+    class="card w-full max-w-md bg-base-100 shadow-2xl z-10 border border-base-300"
+  >
     <div class="card-body">
-      <h1 class="text-3xl font-bold text-center mb-6">Join Quiz</h1>
+      <h2 class="card-title text-3xl font-bold justify-center mb-6">
+        Join Game
+      </h2>
+
+      {#if error}
+        <div class="alert alert-error shadow-lg mb-4">
+          <span>{error}</span>
+        </div>
+      {/if}
 
       <div class="form-control w-full">
         <label class="label" for="room-id">
-          <span class="label-text">Room ID</span>
+          <span class="label-text font-semibold">Room ID</span>
         </label>
         <input
           id="room-id"
           type="text"
-          placeholder="Enter Room ID"
-          class="input input-bordered w-full"
+          placeholder="Paste Room ID here..."
+          class="input input-bordered w-full focus:input-primary transition-all"
           bind:value={roomId}
         />
       </div>
 
       <div class="form-control w-full mt-4">
         <label class="label" for="nickname">
-          <span class="label-text">Nickname</span>
+          <span class="label-text font-semibold">Nickname</span>
         </label>
         <input
           id="nickname"
           type="text"
-          placeholder="Enter your nickname"
-          class="input input-bordered w-full"
+          placeholder="Enter your name"
+          class="input input-bordered w-full focus:input-primary transition-all"
           bind:value={nickname}
         />
       </div>
 
       <div class="card-actions justify-end mt-8">
         <button
-          class="btn btn-primary w-full"
+          class="btn btn-primary w-full text-lg"
           on:click={joinGame}
-          disabled={isConnecting || !roomId || !nickname}
+          disabled={isConnecting}
         >
           {#if isConnecting}
             <span class="loading loading-spinner"></span>
@@ -84,7 +94,9 @@
         </button>
       </div>
 
-      <div class="text-center mt-4">
+      <div class="divider">OR</div>
+
+      <div class="text-center">
         <a href="/" class="link link-hover text-sm">Back to Home</a>
       </div>
     </div>
