@@ -10,7 +10,8 @@
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "prepare": "husky"
   },
   "devDependencies": {
     "turbo": "^1.10.0"
