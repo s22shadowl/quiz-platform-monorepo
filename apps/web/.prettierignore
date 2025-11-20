@@ -1,0 +1,6 @@
+.svelte-kit
+node_modules
+.turbo
+build
+dist
+package-lock.json

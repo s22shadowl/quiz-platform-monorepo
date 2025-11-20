@@ -1,28 +1,23 @@
 export type QuestionType = "choice" | "text" | "quick_answer";
-export type MediaType = "image" | "video" | "none";
-
-export interface Option {
-  text: string;
-  is_correct: boolean;
-}
 
 export interface Question {
   id: string;
+  text: string;
   type: QuestionType;
-  content: string;
-  media_type: MediaType;
-  media_url?: string;
-  options: Option[];
-  time_limit: number;
+  options: string[];
+  correctAnswer?: string;
+  mediaUrl?: string;
+  timeLimit: number;
+  points: number;
 }
 
 export interface Quiz {
   id: string;
   title: string;
   description: string;
-  created_at: number;
-  updated_at: number;
   questions: Question[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Player {
@@ -35,7 +30,7 @@ export interface Player {
 
 export interface GameHistory {
   id: string;
-  quiz_title: string;
-  played_at: number;
+  quizTitle: string;
+  playedAt: number;
   players: Player[];
 }
