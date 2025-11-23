@@ -46,7 +46,7 @@
 <div class="card bg-base-100 shadow-md border border-base-200">
   <div class="card-body p-6">
     <div class="flex justify-between items-start">
-      <h3 class="card-title text-lg">Question {index}</h3>
+      <h3 class="card-title text-lg">題目 {index}</h3>
       <button
         class="btn btn-square btn-ghost btn-sm text-error"
         on:click={() => dispatch("delete")}
@@ -70,7 +70,7 @@
     <!-- Question Text -->
     <div class="form-control w-full">
       <label class="label py-1" for={`question-text-${question.id}`}>
-        <span class="label-text-alt">Question Text</span>
+        <span class="label-text-alt">題目內容</span>
       </label>
       <input
         id={`question-text-${question.id}`}
@@ -78,14 +78,14 @@
         value={question.text}
         on:input={(e) => updateField("text", e.currentTarget.value)}
         class="input input-bordered font-semibold"
-        placeholder="Enter question text..."
+        placeholder="輸入題目..."
       />
     </div>
 
     <!-- Media URL -->
     <div class="form-control w-full mt-2">
       <label class="label py-1" for={`media-url-${question.id}`}>
-        <span class="label-text-alt">Image/Video URL (Optional)</span>
+        <span class="label-text-alt">圖片/影片 URL (選填)</span>
       </label>
       <input
         id={`media-url-${question.id}`}
@@ -101,7 +101,7 @@
       <!-- Time Limit -->
       <div class="form-control">
         <label class="label py-1" for={`time-limit-${question.id}`}>
-          <span class="label-text-alt">Time Limit (seconds)</span>
+          <span class="label-text-alt">時間限制 (秒)</span>
         </label>
         <select
           id={`time-limit-${question.id}`}
@@ -110,19 +110,19 @@
           on:change={(e) =>
             updateField("timeLimit", parseInt(e.currentTarget.value))}
         >
-          <option value={10}>10s</option>
-          <option value={20}>20s</option>
-          <option value={30}>30s</option>
-          <option value={60}>60s</option>
-          <option value={90}>90s</option>
-          <option value={120}>120s</option>
+          <option value={10}>10秒</option>
+          <option value={20}>20秒</option>
+          <option value={30}>30秒</option>
+          <option value={60}>60秒</option>
+          <option value={90}>90秒</option>
+          <option value={120}>120秒</option>
         </select>
       </div>
 
       <!-- Points -->
       <div class="form-control">
         <label class="label py-1" for={`points-${question.id}`}>
-          <span class="label-text-alt">Points</span>
+          <span class="label-text-alt">分數</span>
         </label>
         <select
           id={`points-${question.id}`}
@@ -141,7 +141,7 @@
     </div>
 
     <!-- Options -->
-    <div class="divider my-2">Options</div>
+    <div class="divider my-2">選項</div>
     <div class="space-y-2">
       {#each question.options as option, i}
         <div class="flex items-center gap-2">
@@ -186,7 +186,7 @@
           class="btn btn-ghost btn-sm btn-block mt-2 border-dashed border-2 border-base-300"
           on:click={addOption}
         >
-          + Add Option
+          + 新增選項
         </button>
       {/if}
     </div>

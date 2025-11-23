@@ -22,26 +22,47 @@
       <h1
         class="text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent animate-gradient-x"
       >
-        Quiz Platform
+        P2P 測驗平台
       </h1>
       <p class="py-6 text-lg text-base-content/80">
-        The ultimate P2P quiz experience. Host games, challenge friends, and
-        track your victory. No server required.
+        極致的 P2P 測驗體驗。主持遊戲、挑戰朋友、追蹤戰績。無需伺服器。
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a
           href="/host/quizzes"
           class="btn btn-primary btn-lg shadow-lg hover:scale-105 transition-transform"
         >
-          Host Game
+          主持遊戲
         </a>
         <a
           href="/join"
           class="btn btn-outline btn-lg shadow-lg hover:scale-105 transition-transform"
         >
-          Join Game
+          加入遊戲
         </a>
       </div>
+    </div>
+  </div>
+
+  <div class="fixed bottom-4 right-4">
+    <div
+      class="tooltip tooltip-left"
+      data-tip="P2P 測驗平台 - 使用 SvelteKit & PeerJS 建構"
+    >
+      <button class="btn btn-circle btn-ghost bg-base-100 shadow-lg">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="w-6 h-6 stroke-current"
+          ><path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          ></path></svg
+        >
+      </button>
     </div>
   </div>
 </div>

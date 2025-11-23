@@ -28,7 +28,7 @@
 
   function startGame() {
     if (players.length === 0) {
-      alert("Wait for players to join!")
+      alert("請等待玩家加入！")
       return
     }
     gameStore.startGame()
@@ -38,18 +38,18 @@
 <div class="min-h-screen bg-base-200 p-4">
   <div class="container mx-auto max-w-4xl">
     <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold mb-2">Game Lobby</h1>
-      <p class="text-base-content/60">Waiting for players to join...</p>
+      <h1 class="text-4xl font-bold mb-2">遊戲大廳</h1>
+      <p class="text-base-content/60">等待玩家加入中...</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <!-- Room Info Card -->
       <div class="card bg-base-100 shadow-xl border border-base-300 h-fit">
         <div class="card-body">
-          <h2 class="card-title text-2xl mb-4">Room Info</h2>
+          <h2 class="card-title text-2xl mb-4">房間資訊</h2>
           <div class="form-control">
             <label class="label" for="room-id">
-              <span class="label-text font-semibold">Room ID</span>
+              <span class="label-text font-semibold">房間 ID</span>
             </label>
             <div class="join">
               <input
@@ -60,12 +60,12 @@
                 class="input input-bordered join-item w-full font-mono bg-base-200"
               />
               <button class="btn btn-primary join-item" on:click={copyRoomId}>
-                {copied ? "Copied!" : "Copy"}
+                {copied ? "已複製！" : "複製"}
               </button>
             </div>
             <label class="label" for="room-id">
               <span class="label-text-alt text-base-content/60"
-                >Share this ID with players</span
+                >將此 ID 分享給玩家</span
               >
             </label>
           </div>
@@ -85,13 +85,11 @@
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               ></path></svg
             >
-            <span
-              >Select a quiz from "My Quizzes" to start a game session properly.</span
-            >
+            <span>請從「我的測驗」選擇一個測驗以正確開始遊戲。</span>
           </div>
           <div class="card-actions justify-end mt-4">
             <a href="/host/quizzes" class="btn btn-outline w-full"
-              >Go to My Quizzes</a
+              >前往我的測驗</a
             >
           </div>
         </div>
@@ -101,9 +99,9 @@
       <div class="card bg-base-100 shadow-xl border border-base-300">
         <div class="card-body">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="card-title text-2xl">Players</h2>
+            <h2 class="card-title text-2xl">玩家列表</h2>
             <div class="badge badge-secondary badge-lg">
-              {players.length} Joined
+              {players.length} 已加入
             </div>
           </div>
 
@@ -115,7 +113,7 @@
                 class="flex flex-col items-center justify-center h-full text-base-content/40"
               >
                 <span class="loading loading-dots loading-lg mb-2"></span>
-                <p>Waiting for players...</p>
+                <p>等待玩家中...</p>
               </div>
             {:else}
               <ul class="menu bg-base-100 rounded-box">
@@ -140,7 +138,7 @@
                         </div>
                         <span class="font-semibold">{player.nickname}</span>
                       </div>
-                      <span class="badge badge-ghost">Ready</span>
+                      <span class="badge badge-ghost">準備就緒</span>
                     </button>
                   </li>
                 {/each}
@@ -162,7 +160,7 @@
       disabled={players.length === 0}
       on:click={startGame}
     >
-      Start Game
+      開始遊戲
     </button>
   </div>
 </div>

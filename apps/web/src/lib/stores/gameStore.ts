@@ -64,12 +64,12 @@ function createGameStore() {
           currentQuestionIndex: 0,
           currentQuestion: state.quiz.questions[0],
           timeRemaining: state.quiz.questions[0].timeLimit,
+          isPaused: false,
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
-      // Start Timer
-      // startTimer(); // Need to implement timer logic
+      startTimer();
     },
 
     nextQuestion: () => {
@@ -77,15 +77,6 @@ function createGameStore() {
         if (!state.quiz) return state;
         const nextIndex = state.currentQuestionIndex + 1;
         if (nextIndex >= state.quiz.questions.length) {
-          // Auto-end game or wait for host? Let's wait for host to explicitly end,
-          // OR just show "End of Quiz" state.
-          // For now, let's transition to finished state directly via endGame logic to save history.
-          // But we can't call endGame() from here easily because it's inside update().
-          // Let's just return state and let the Host click "Finish" or handle it differently.
-          // Actually, let's just set it to finished here for now, but saving history might be tricky inside update if we want to reuse logic.
-          // Let's duplicate the history saving logic here or refactor.
-          // Refactoring to use a shared helper or just saving here.
-
           import("../storage").then(({ storage }) => {
             storage.saveHistory({
               id: crypto.randomUUID(),
@@ -99,11 +90,13 @@ function createGameStore() {
             ...state,
             status: "finished" as GameStatus,
             currentQuestion: null,
+            isPaused: false,
           };
           connectionManager.broadcast({
             type: "GAME_STATE",
             payload: finishedState,
           });
+          clearInterval(timerInterval);
           return finishedState;
         }
         const nextQuestion = state.quiz.questions[nextIndex];
@@ -112,7 +105,17 @@ function createGameStore() {
           currentQuestionIndex: nextIndex,
           currentQuestion: nextQuestion,
           timeRemaining: nextQuestion.timeLimit,
+          isPaused: false,
         };
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+      startTimer();
+    },
+
+    togglePause: () => {
+      update((state) => {
+        const newState = { ...state, isPaused: !state.isPaused };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
@@ -163,6 +166,7 @@ function createGameStore() {
           ...state,
           status: "finished" as GameStatus,
           currentQuestion: null,
+          isPaused: false,
         };
         connectionManager.broadcast({
           type: "GAME_STATE",
@@ -183,6 +187,30 @@ function createGameStore() {
       clearInterval(timerInterval);
     },
   };
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      update((state) => {
+        if (state.status !== "playing" || state.isPaused) return state;
+
+        if (state.timeRemaining <= 0) {
+          // Time's up!
+          // Optionally auto-advance or just stay at 0
+          // For now, stay at 0
+          return state;
+        }
+
+        const newState = { ...state, timeRemaining: state.timeRemaining - 1 };
+        // Broadcast every second might be too much traffic, but for local P2P it's okay-ish.
+        // Optimization: Broadcast only every 5s or critical moments?
+        // For accurate countdown on client, we need frequent updates or client-side interpolation.
+        // Let's broadcast every second for now.
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+    }, 1000);
+  }
 }
 
 export const gameStore = createGameStore();

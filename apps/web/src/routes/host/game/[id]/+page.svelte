@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import { page } from "$app/stores"
+  import { connectionStore } from "$lib/stores/connectionStore"
+  import { beforeNavigate } from "$app/navigation"
   import { gameStore } from "$lib/stores/gameStore"
   import { quizStore } from "$lib/stores/quizStore"
   import { goto } from "$app/navigation"
 
   let quizId: string
+  let copied = false
 
   $: quizId = $page.params.id ?? ""
 
@@ -19,10 +22,31 @@
     if (quiz) {
       gameStore.initGame(quiz)
     } else {
-      alert("Quiz not found!")
+      alert("找不到測驗！")
       goto("/host/quizzes")
     }
   })
+
+  // Prevent accidental navigation
+  beforeNavigate(({ cancel }) => {
+    if ($gameStore.status === "playing") {
+      if (!confirm("遊戲正在進行中，確定要離開嗎？這將會結束遊戲。")) {
+        cancel()
+      } else {
+        // If confirmed, we should probably notify players or clean up,
+        // but for now just letting them leave is fine as the connection will drop.
+      }
+    }
+  })
+
+  // Prevent accidental refresh/close
+  function handleBeforeUnload(e: BeforeUnloadEvent) {
+    if ($gameStore.status === "playing") {
+      e.preventDefault()
+      e.returnValue = ""
+      return ""
+    }
+  }
 
   function startGame() {
     gameStore.startGame()
@@ -33,17 +57,57 @@
   }
 
   function endGame() {
-    // gameStore.endGame(); // TODO: Implement end game
-    goto("/host/quizzes")
+    if (confirm("確定要結束遊戲嗎？")) {
+      // gameStore.endGame(); // TODO: Implement end game
+      goto("/host/quizzes")
+    }
+  }
+
+  function togglePause() {
+    gameStore.togglePause()
+  }
+
+  function copyRoomId() {
+    if ($connectionStore.peerId) {
+      navigator.clipboard.writeText($connectionStore.peerId)
+      copied = true
+      setTimeout(() => (copied = false), 2000)
+    }
   }
 </script>
 
+<svelte:window on:beforeunload={handleBeforeUnload} />
+
 <div class="container mx-auto p-4">
   {#if $gameStore.quiz}
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Host: {$gameStore.quiz.title}</h1>
-      <div class="badge badge-primary badge-lg">
-        {$gameStore.status.toUpperCase()}
+    <div
+      class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4"
+    >
+      <div>
+        <h1 class="text-2xl font-bold">主持人: {$gameStore.quiz.title}</h1>
+        {#if $connectionStore.peerId}
+          <button
+            class="btn btn-xs btn-ghost gap-2 mt-1"
+            on:click={copyRoomId}
+            title="點擊複製"
+          >
+            <span class="text-base-content/60">房間 ID:</span>
+            <span class="font-mono font-bold">{$connectionStore.peerId}</span>
+            {#if copied}
+              <span class="text-success text-xs">已複製</span>
+            {/if}
+          </button>
+        {/if}
+      </div>
+      <div class="flex items-center gap-2">
+        {#if $gameStore.status === "playing"}
+          <button class="btn btn-warning btn-sm" on:click={togglePause}>
+            {$gameStore.isPaused ? "繼續" : "暫停"}
+          </button>
+        {/if}
+        <div class="badge badge-primary badge-lg">
+          {$gameStore.status.toUpperCase()}
+        </div>
       </div>
     </div>
 
@@ -53,10 +117,10 @@
         {#if $gameStore.status === "lobby"}
           <div class="card bg-base-200 shadow-xl">
             <div class="card-body items-center text-center">
-              <h2 class="card-title text-3xl mb-4">Waiting for Players...</h2>
+              <h2 class="card-title text-3xl mb-4">等待玩家中...</h2>
               <button
                 class="btn btn-primary btn-lg btn-wide"
-                on:click={startGame}>Start Game</button
+                on:click={startGame}>開始遊戲</button
               >
             </div>
           </div>
@@ -67,10 +131,12 @@
                 class="flex justify-between text-sm font-bold text-base-content/60 mb-2"
               >
                 <span
-                  >Question {$gameStore.currentQuestionIndex + 1} / {$gameStore
-                    .quiz.questions.length}</span
+                  >題目 {$gameStore.currentQuestionIndex + 1} / {$gameStore.quiz
+                    .questions.length}</span
                 >
-                <span>Time: {$gameStore.timeRemaining}s</span>
+                <span class:text-error={$gameStore.timeRemaining <= 5}
+                  >時間: {$gameStore.timeRemaining}s</span
+                >
               </div>
 
               {#if $gameStore.currentQuestion}
@@ -115,7 +181,7 @@
 
               <div class="card-actions justify-end mt-8">
                 <button class="btn btn-secondary" on:click={nextQuestion}
-                  >Next Question</button
+                  >下一題</button
                 >
               </div>
             </div>
@@ -123,9 +189,9 @@
         {:else if $gameStore.status === "finished"}
           <div class="card bg-base-200 shadow-xl">
             <div class="card-body items-center text-center">
-              <h2 class="card-title text-3xl mb-4">Game Over!</h2>
+              <h2 class="card-title text-3xl mb-4">遊戲結束！</h2>
               <button class="btn btn-primary" on:click={endGame}
-                >Back to Menu</button
+                >回到選單</button
               >
             </div>
           </div>
@@ -136,14 +202,14 @@
       <div class="card bg-base-100 shadow-xl border border-base-300 h-fit">
         <div class="card-body">
           <h3 class="card-title text-lg mb-4">
-            Players ({$gameStore.players.length})
+            玩家 ({$gameStore.players.length})
           </h3>
           <div class="overflow-y-auto max-h-[600px]">
             <table class="table table-zebra w-full">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th class="text-right">Score</th>
+                  <th>暱稱</th>
+                  <th class="text-right">分數</th>
                 </tr>
               </thead>
               <tbody>

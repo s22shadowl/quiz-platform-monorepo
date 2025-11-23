@@ -44,7 +44,7 @@
   >
     <div class="card-body">
       <h2 class="card-title text-3xl font-bold justify-center mb-6">
-        Join Game
+        加入遊戲
       </h2>
 
       {#if error}
@@ -55,12 +55,12 @@
 
       <div class="form-control w-full">
         <label class="label" for="room-id">
-          <span class="label-text font-semibold">Room ID</span>
+          <span class="label-text font-semibold">房間 ID</span>
         </label>
         <input
           id="room-id"
           type="text"
-          placeholder="Paste Room ID here..."
+          placeholder="在此貼上房間 ID..."
           class="input input-bordered w-full focus:input-primary transition-all"
           bind:value={roomId}
         />
@@ -68,12 +68,12 @@
 
       <div class="form-control w-full mt-4">
         <label class="label" for="nickname">
-          <span class="label-text font-semibold">Nickname</span>
+          <span class="label-text font-semibold">暱稱</span>
         </label>
         <input
           id="nickname"
           type="text"
-          placeholder="Enter your name"
+          placeholder="輸入您的名字"
           class="input input-bordered w-full focus:input-primary transition-all"
           bind:value={nickname}
         />
@@ -87,17 +87,17 @@
         >
           {#if isConnecting}
             <span class="loading loading-spinner"></span>
-            Connecting...
+            連線中...
           {:else}
-            Join Game
+            加入遊戲
           {/if}
         </button>
       </div>
 
-      <div class="divider">OR</div>
+      <div class="divider">或</div>
 
       <div class="text-center">
-        <a href="/" class="link link-hover text-sm">Back to Home</a>
+        <a href="/" class="link link-hover text-sm">返回首頁</a>
       </div>
     </div>
   </div>

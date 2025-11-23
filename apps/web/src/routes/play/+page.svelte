@@ -29,26 +29,37 @@
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
           /></svg
         >
-        <span>Not connected to any game. Please join from the home page.</span>
+        <span>尚未連線至任何遊戲。請從首頁加入。</span>
       </div>
     </div>
   {:else if $gameStore.status === "lobby"}
     <div class="hero my-auto">
       <div class="hero-content text-center">
         <div class="max-w-md">
-          <h1 class="text-3xl font-bold mb-4">Waiting for Host...</h1>
-          <p class="py-4">You are connected! The game will start soon.</p>
+          <h1 class="text-3xl font-bold mb-4">等待主持人...</h1>
+          <p class="py-4">您已連線！遊戲即將開始。</p>
           <div class="loading loading-dots loading-lg"></div>
         </div>
       </div>
     </div>
   {:else if $gameStore.status === "playing" && $gameStore.currentQuestion}
-    <div class="flex-1 flex flex-col justify-center">
+    <div class="flex-1 flex flex-col justify-center relative">
+      {#if $gameStore.isPaused}
+        <div
+          class="absolute inset-0 bg-base-100/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-box"
+        >
+          <div class="text-center">
+            <h2 class="text-4xl font-bold mb-2">遊戲暫停</h2>
+            <p class="text-xl">請稍候...</p>
+          </div>
+        </div>
+      {/if}
+
       <div class="card bg-base-100 shadow-xl mb-4">
         <div class="card-body">
           <div class="flex justify-between text-sm text-base-content/60 mb-2">
-            <span>Q{$gameStore.currentQuestionIndex + 1}</span>
-            <span>{$gameStore.timeRemaining}s</span>
+            <span>第 {$gameStore.currentQuestionIndex + 1} 題</span>
+            <span>{$gameStore.timeRemaining}秒</span>
           </div>
           <h2 class="card-title text-xl">{$gameStore.currentQuestion.text}</h2>
         </div>
@@ -59,6 +70,7 @@
           <button
             class="btn btn-lg btn-outline h-auto py-4 text-lg"
             on:click={() => sendAnswer(option)}
+            disabled={$gameStore.isPaused}
           >
             {option}
           </button>
@@ -69,8 +81,8 @@
     <div class="hero my-auto">
       <div class="hero-content text-center">
         <div class="max-w-md">
-          <h1 class="text-4xl font-bold mb-4">Game Over!</h1>
-          <p class="text-2xl">Thanks for playing.</p>
+          <h1 class="text-4xl font-bold mb-4">遊戲結束！</h1>
+          <p class="text-2xl">感謝您的參與。</p>
         </div>
       </div>
     </div>

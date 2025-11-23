@@ -16,13 +16,13 @@
 
 <div class="container mx-auto p-4">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">Game History</h1>
-    <a href="/host/quizzes" class="btn btn-outline">Back to Quizzes</a>
+    <h1 class="text-3xl font-bold">遊戲紀錄</h1>
+    <a href="/host/quizzes" class="btn btn-outline">返回測驗列表</a>
   </div>
 
   {#if history.length === 0}
     <div class="text-center py-12 text-base-content/50">
-      <p class="text-xl">No games played yet.</p>
+      <p class="text-xl">尚無遊戲紀錄。</p>
     </div>
   {:else}
     <div class="grid gap-6">
@@ -37,7 +37,7 @@
                 </p>
               </div>
               <div class="badge badge-primary">
-                {game.players.length} Players
+                {game.players.length} 位玩家
               </div>
             </div>
 
@@ -47,10 +47,10 @@
               <table class="table table-zebra w-full">
                 <thead>
                   <tr>
-                    <th>Rank</th>
-                    <th>Nickname</th>
-                    <th class="text-right">Score</th>
-                    <th class="text-right">Streak</th>
+                    <th>排名</th>
+                    <th>暱稱</th>
+                    <th class="text-right">分數</th>
+                    <th class="text-right">連勝</th>
                   </tr>
                 </thead>
                 <tbody>
