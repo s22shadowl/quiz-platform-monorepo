@@ -62,6 +62,7 @@ describe("gameStore", () => {
     const state = get(gameStore);
     expect(state.quiz).toEqual(mockQuiz);
     expect(state.status).toBe("lobby");
+    expect(state.answeredPlayerIds).toEqual([]);
   });
 
   it("should start game and set initial state", () => {
@@ -72,6 +73,7 @@ describe("gameStore", () => {
     expect(state.status).toBe("playing");
     expect(state.currentQuestionIndex).toBe(0);
     expect(state.timeRemaining).toBe(10);
+    expect(state.answeredPlayerIds).toEqual([]);
     expect(connectionManager.broadcast).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "GAME_STATE",
@@ -80,15 +82,18 @@ describe("gameStore", () => {
     );
   });
 
-  it("should countdown timer", () => {
+  it("should countdown timer but stop at 0 without auto-advance", () => {
     gameStore.initGame(mockQuiz);
     gameStore.startGame();
 
-    vi.advanceTimersByTime(1000);
-    expect(get(gameStore).timeRemaining).toBe(9);
+    // Advance to 0
+    vi.advanceTimersByTime(10000);
+    expect(get(gameStore).timeRemaining).toBe(0);
 
+    // Advance more - should stay at 0
     vi.advanceTimersByTime(2000);
-    expect(get(gameStore).timeRemaining).toBe(7);
+    expect(get(gameStore).timeRemaining).toBe(0);
+    expect(get(gameStore).currentQuestionIndex).toBe(0); // Should not advance
   });
 
   it("should pause and resume timer", () => {
@@ -110,15 +115,69 @@ describe("gameStore", () => {
     expect(get(gameStore).timeRemaining).toBe(9); // Should resume counting
   });
 
-  it("should move to next question", () => {
+  it("should move to next question and reset answered state", () => {
     gameStore.initGame(mockQuiz);
+    gameStore.addPlayer("p1", "Player 1");
     gameStore.startGame();
+
+    // Answer first question
+    gameStore.handleAnswer("p1", "A");
+    expect(get(gameStore).answeredPlayerIds).toContain("p1");
+
     gameStore.nextQuestion();
 
     const state = get(gameStore);
     expect(state.currentQuestionIndex).toBe(1);
     expect(state.currentQuestion?.id).toBe("q2");
     expect(state.timeRemaining).toBe(20);
+    expect(state.answeredPlayerIds).toEqual([]); // Should be reset
+  });
+
+  it("should handle answering logic correctly", () => {
+    gameStore.initGame(mockQuiz);
+    gameStore.addPlayer("p1", "Player 1");
+    gameStore.startGame();
+
+    // Correct answer
+    gameStore.handleAnswer("p1", "A");
+    let player = get(gameStore).players.find((p) => p.id === "p1");
+    expect(player?.score).toBe(100);
+    expect(player?.streak).toBe(1);
+    expect(get(gameStore).answeredPlayerIds).toContain("p1");
+
+    // Duplicate answer (should be ignored)
+    gameStore.handleAnswer("p1", "B");
+    player = get(gameStore).players.find((p) => p.id === "p1");
+    expect(player?.score).toBe(100); // Score shouldn't change
+    expect(player?.streak).toBe(1);
+
+    // Next question
+    gameStore.nextQuestion();
+
+    // Wrong answer
+    gameStore.handleAnswer("p1", "D"); // Correct is C
+    player = get(gameStore).players.find((p) => p.id === "p1");
+    expect(player?.score).toBe(100); // No points
+    expect(player?.streak).toBe(0); // Streak reset
+  });
+
+  it("should ignore answers when time is up or paused", () => {
+    gameStore.initGame(mockQuiz);
+    gameStore.addPlayer("p1", "Player 1");
+    gameStore.startGame();
+
+    // Pause
+    gameStore.togglePause();
+    gameStore.handleAnswer("p1", "A");
+    expect(get(gameStore).answeredPlayerIds).not.toContain("p1");
+
+    // Resume
+    gameStore.togglePause();
+
+    // Time up
+    vi.advanceTimersByTime(10000); // 0s remaining
+    gameStore.handleAnswer("p1", "A");
+    expect(get(gameStore).answeredPlayerIds).not.toContain("p1");
   });
 
   it("should end game after last question", () => {

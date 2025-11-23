@@ -12,6 +12,7 @@ export interface GameState {
   players: Player[];
   timeRemaining: number;
   isPaused: boolean;
+  answeredPlayerIds: string[]; // Track who answered current question
 }
 
 function createGameStore() {
@@ -23,6 +24,7 @@ function createGameStore() {
     players: [],
     timeRemaining: 0,
     isPaused: false,
+    answeredPlayerIds: [],
   };
 
   const { subscribe, set, update } = writable<GameState>(initialState);
@@ -65,6 +67,7 @@ function createGameStore() {
           currentQuestion: state.quiz.questions[0],
           timeRemaining: state.quiz.questions[0].timeLimit,
           isPaused: false,
+          answeredPlayerIds: [],
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
@@ -106,6 +109,7 @@ function createGameStore() {
           currentQuestion: nextQuestion,
           timeRemaining: nextQuestion.timeLimit,
           isPaused: false,
+          answeredPlayerIds: [],
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
@@ -123,7 +127,30 @@ function createGameStore() {
 
     handleAnswer: (playerId: string, option: string) => {
       update((state) => {
-        if (state.status !== "playing" || !state.currentQuestion) return state;
+        if (
+          state.status !== "playing" ||
+          !state.currentQuestion ||
+          state.isPaused ||
+          state.timeRemaining <= 0
+        ) {
+          return state;
+        }
+
+        // Check if player has already answered this question
+        // We need to track this. Since we don't have a separate "answers" map in GameState yet,
+        // we can infer it if we want, OR better, add a `lastAnsweredQuestionId` to Player.
+        // For now, let's add a simple check: if the player's score/streak updated for this question?
+        // Actually, the best way is to track `answeredPlayers` set in the state for the current question.
+        // Let's modify GameState to include `answeredPlayerIds`.
+
+        // WAIT: Modifying GameState interface requires updating initial state and types.
+        // Let's check if we can do it with existing structures.
+        // If we don't track it, we can't prevent double answering on the server side easily without adding state.
+        // Let's add `answeredPlayerIds` to GameState.
+
+        if (state.answeredPlayerIds.includes(playerId)) {
+          return state;
+        }
 
         const isCorrect = option === state.currentQuestion.correctAnswer;
         const points = isCorrect ? state.currentQuestion.points : 0;
@@ -142,7 +169,11 @@ function createGameStore() {
         // Sort players by score descending
         updatedPlayers.sort((a, b) => b.score - a.score);
 
-        const newState = { ...state, players: updatedPlayers };
+        const newState = {
+          ...state,
+          players: updatedPlayers,
+          answeredPlayerIds: [...state.answeredPlayerIds, playerId],
+        };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
@@ -167,6 +198,7 @@ function createGameStore() {
           status: "finished" as GameStatus,
           currentQuestion: null,
           isPaused: false,
+          answeredPlayerIds: [],
         };
         connectionManager.broadcast({
           type: "GAME_STATE",
@@ -195,17 +227,12 @@ function createGameStore() {
         if (state.status !== "playing" || state.isPaused) return state;
 
         if (state.timeRemaining <= 0) {
-          // Time's up!
-          // Optionally auto-advance or just stay at 0
-          // For now, stay at 0
+          // Time's up! Stop counting but stay in 'playing' state.
+          // Do NOT auto-advance.
           return state;
         }
 
         const newState = { ...state, timeRemaining: state.timeRemaining - 1 };
-        // Broadcast every second might be too much traffic, but for local P2P it's okay-ish.
-        // Optimization: Broadcast only every 5s or critical moments?
-        // For accurate countdown on client, we need frequent updates or client-side interpolation.
-        // Let's broadcast every second for now.
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });

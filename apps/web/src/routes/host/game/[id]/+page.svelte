@@ -25,7 +25,7 @@
       gameStore.initGame(quiz)
       // Initialize P2P connection if not already connected
       if (!$connectionStore.peerId) {
-        await connectionManager.init()
+        await connectionManager.init({ isHost: true })
       }
     } else {
       alert("找不到測驗！")
@@ -64,8 +64,12 @@
 
   function endGame() {
     if (confirm("確定要結束遊戲嗎？")) {
-      // gameStore.endGame(); // TODO: Implement end game
-      goto("/host/quizzes")
+      gameStore.endGame()
+      // Give a moment for the message to be sent before navigating/destroying
+      setTimeout(() => {
+        connectionManager.destroy()
+        goto("/host/quizzes")
+      }, 500)
     }
   }
 
@@ -164,21 +168,6 @@
                     <div
                       class="p-4 bg-base-200 rounded-lg border border-base-300 flex items-center gap-3"
                     >
-                      {#if option === $gameStore.currentQuestion.correctAnswer}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-6 w-6 text-success"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          ><path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5 13l4 4L19 7"
-                          /></svg
-                        >
-                      {/if}
                       <span>{option}</span>
                     </div>
                   {/each}

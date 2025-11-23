@@ -16,8 +16,9 @@ export class ConnectionManager {
 
   constructor() {}
 
-  async init(id?: string): Promise<string> {
-    this.isHost = !id; // If no ID provided, we are generating one -> Host
+  async init(options: { id?: string; isHost?: boolean } = {}): Promise<string> {
+    const { id, isHost } = options;
+    this.isHost = isHost ?? !id; // Default logic: if no ID, assume host (unless specified)
     return new Promise((resolve, reject) => {
       // Use a public PeerJS server for now, can be configured for self-hosted later
       this.peer = id ? new Peer(id) : new Peer();
@@ -41,7 +42,7 @@ export class ConnectionManager {
   }
 
   private handleIncomingConnection(conn: DataConnection) {
-    conn.on("open", () => {
+    const onOpen = () => {
       console.log("Connected to: " + conn.peer);
       this.connections.set(conn.peer, conn);
       connectionStore.addConnection(conn.peer);
@@ -50,7 +51,13 @@ export class ConnectionManager {
       if (this.isHost) {
         // TODO: Send current game state
       }
-    });
+    };
+
+    if (conn.open) {
+      onOpen();
+    } else {
+      conn.on("open", onOpen);
+    }
 
     conn.on("data", (data) => {
       console.log("Received data:", data);
@@ -99,7 +106,7 @@ export class ConnectionManager {
   }
 
   async connectToHost(hostId: string, nickname: string) {
-    if (!this.peer) await this.init();
+    if (!this.peer) await this.init({ isHost: false });
 
     const conn = this.peer!.connect(hostId);
 
