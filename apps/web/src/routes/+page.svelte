@@ -45,26 +45,54 @@
   </div>
 
   <div class="fixed bottom-4 right-4">
-    <div
-      class="tooltip tooltip-left"
-      data-tip="P2P 測驗平台 - 使用 SvelteKit & PeerJS 建構"
+    <button
+      class="btn btn-circle btn-ghost bg-base-100 shadow-lg"
+      on:click={() => {
+        const modal = document.getElementById("project_info_modal")
+        if (modal && "showModal" in modal) {
+          // @ts-expect-error - showModal is not in HTMLElement type definition
+          modal.showModal()
+        }
+      }}
     >
-      <button class="btn btn-circle btn-ghost bg-base-100 shadow-lg">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="w-6 h-6 stroke-current"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path></svg
-        >
-      </button>
-    </div>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        class="w-6 h-6 stroke-current"
+        ><path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path></svg
+      >
+    </button>
   </div>
+
+  <dialog id="project_info_modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">P2P 測驗平台</h3>
+      <p class="py-4">
+        這是一個基於 P2P 技術的即時測驗平台，無需伺服器即可多人同樂。
+      </p>
+      <div class="divider">技術棧</div>
+      <ul class="list-disc list-inside space-y-2">
+        <li><strong>Frontend:</strong> SvelteKit + TailwindCSS + DaisyUI</li>
+        <li><strong>P2P:</strong> PeerJS (WebRTC)</li>
+        <li><strong>State:</strong> Svelte Stores</li>
+        <li><strong>Storage:</strong> LocalStorage</li>
+      </ul>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn">關閉</button>
+        </form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 </div>
 
 <style>

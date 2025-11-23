@@ -4,6 +4,10 @@
   import { goto } from "$app/navigation"
   import { v4 as uuidv4 } from "uuid"
   import type { Quiz } from "$lib/types"
+  import {
+    validateAndParseQuiz,
+    generateQuizExportData,
+  } from "$lib/utils/quizUtils"
 
   onMount(() => {
     quizStore.load()
@@ -29,9 +33,7 @@
   }
 
   function exportQuiz(quiz: Quiz) {
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(quiz, null, 2))
+    const dataStr = generateQuizExportData(quiz)
     const downloadAnchorNode = document.createElement("a")
     downloadAnchorNode.setAttribute("href", dataStr)
     downloadAnchorNode.setAttribute("download", `${quiz.title || "quiz"}.json`)
@@ -54,17 +56,8 @@
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
-        const json = JSON.parse(event.target?.result as string)
-        // Basic validation
-        if (!json.id || !json.title || !Array.isArray(json.questions)) {
-          throw new Error("Invalid quiz format")
-        }
-        // Generate new ID to avoid conflicts
-        json.id = uuidv4()
-        json.createdAt = Date.now()
-        json.updatedAt = Date.now()
-
-        quizStore.add(json)
+        const quiz = validateAndParseQuiz(event.target?.result as string)
+        quizStore.add(quiz)
         alert("匯入成功！")
       } catch (err) {
         alert("匯入失敗：格式錯誤")
@@ -80,7 +73,24 @@
 <div class="container mx-auto">
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold">我的測驗</h1>
-    <div class="flex gap-2">
+    <div class="flex gap-2 items-center">
+      <div class="tooltip tooltip-bottom" data-tip="支援 .json 格式的測驗檔案">
+        <button class="btn btn-outline" on:click={triggerImport}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            class="w-6 h-6 mr-2 stroke-current"
+            ><path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+            ></path></svg
+          >
+          匯入
+        </button>
+      </div>
       <input
         type="file"
         accept=".json"
@@ -88,21 +98,6 @@
         bind:this={fileInput}
         on:change={handleImport}
       />
-      <button class="btn btn-outline" on:click={triggerImport}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="w-6 h-6 mr-2 stroke-current"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-          ></path></svg
-        >
-        匯入
-      </button>
       <a href="/host/history" class="btn btn-ghost">歷史紀錄</a>
       <button class="btn btn-primary" on:click={createNewQuiz}>
         <svg

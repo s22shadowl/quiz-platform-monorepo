@@ -7,6 +7,8 @@
   import { quizStore } from "$lib/stores/quizStore"
   import { goto } from "$app/navigation"
 
+  import { connectionManager } from "$lib/connection"
+
   let quizId: string
   let copied = false
 
@@ -21,6 +23,10 @@
     const quiz = $quizStore.find((q) => q.id === quizId)
     if (quiz) {
       gameStore.initGame(quiz)
+      // Initialize P2P connection if not already connected
+      if (!$connectionStore.peerId) {
+        await connectionManager.init()
+      }
     } else {
       alert("找不到測驗！")
       goto("/host/quizzes")

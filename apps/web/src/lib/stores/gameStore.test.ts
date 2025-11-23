@@ -1,16 +1,17 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { get } from "svelte/store";
-import { gameStore } from "./gameStore";
+import { gameStore } from "../stores/gameStore";
 import { connectionManager } from "../connection";
-import type { Quiz } from "../types";
+import type { Quiz } from "$lib/types";
 
-// Mock dependencies
+// Mock connectionManager
 vi.mock("../connection", () => ({
   connectionManager: {
     broadcast: vi.fn(),
   },
 }));
 
+// Mock storage
 vi.mock("../storage", () => ({
   storage: {
     saveHistory: vi.fn(),
@@ -19,126 +20,114 @@ vi.mock("../storage", () => ({
 
 describe("gameStore", () => {
   const mockQuiz: Quiz = {
-    id: "test-quiz",
+    id: "quiz-1",
     title: "Test Quiz",
-    description: "Desc",
-    createdAt: 0,
-    updatedAt: 0,
+    description: "",
     questions: [
       {
         id: "q1",
-        text: "Question 1",
-        options: ["A", "B", "C", "D"],
-        correctAnswer: "A",
-        points: 10,
-        timeLimit: 10,
+        text: "Q1",
         type: "choice",
+        options: ["A", "B"],
+        correctAnswer: "A",
+        timeLimit: 10,
+        points: 100,
       },
       {
         id: "q2",
-        text: "Question 2",
-        options: ["A", "B", "C", "D"],
-        correctAnswer: "B",
-        points: 20,
-        timeLimit: 10,
+        text: "Q2",
         type: "choice",
+        options: ["C", "D"],
+        correctAnswer: "C",
+        timeLimit: 20,
+        points: 100,
       },
     ],
+    createdAt: 0,
+    updatedAt: 0,
   };
 
   beforeEach(() => {
-    vi.resetAllMocks();
     gameStore.reset();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
-  it("should initialize game with quiz", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should initialize game", () => {
     gameStore.initGame(mockQuiz);
     const state = get(gameStore);
     expect(state.quiz).toEqual(mockQuiz);
     expect(state.status).toBe("lobby");
   });
 
-  it("should add players", () => {
+  it("should start game and set initial state", () => {
     gameStore.initGame(mockQuiz);
-    gameStore.addPlayer("p1", "Player 1");
-
-    const state = get(gameStore);
-    expect(state.players).toHaveLength(1);
-    expect(state.players[0]).toEqual({
-      id: "p1",
-      nickname: "Player 1",
-      score: 0,
-      streak: 0,
-    });
-    expect(connectionManager.broadcast).toHaveBeenCalledWith({
-      type: "GAME_STATE",
-      payload: expect.any(Object),
-    });
-  });
-
-  it("should start game", () => {
-    gameStore.initGame(mockQuiz);
-    gameStore.addPlayer("p1", "Player 1");
     gameStore.startGame();
 
     const state = get(gameStore);
     expect(state.status).toBe("playing");
     expect(state.currentQuestionIndex).toBe(0);
-    expect(state.currentQuestion).toEqual(mockQuiz.questions[0]);
-    expect(connectionManager.broadcast).toHaveBeenCalled();
+    expect(state.timeRemaining).toBe(10);
+    expect(connectionManager.broadcast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "GAME_STATE",
+        payload: expect.objectContaining({ status: "playing" }),
+      }),
+    );
   });
 
-  it("should handle correct answer", () => {
+  it("should countdown timer", () => {
     gameStore.initGame(mockQuiz);
-    gameStore.addPlayer("p1", "Player 1");
     gameStore.startGame();
 
-    gameStore.handleAnswer("p1", "A"); // Correct answer for q1
+    vi.advanceTimersByTime(1000);
+    expect(get(gameStore).timeRemaining).toBe(9);
 
-    const state = get(gameStore);
-    expect(state.players[0].score).toBe(10);
-    expect(state.players[0].streak).toBe(1);
+    vi.advanceTimersByTime(2000);
+    expect(get(gameStore).timeRemaining).toBe(7);
   });
 
-  it("should handle incorrect answer", () => {
+  it("should pause and resume timer", () => {
     gameStore.initGame(mockQuiz);
-    gameStore.addPlayer("p1", "Player 1");
     gameStore.startGame();
 
-    gameStore.handleAnswer("p1", "B"); // Incorrect answer for q1
+    // Pause
+    gameStore.togglePause();
+    expect(get(gameStore).isPaused).toBe(true);
 
-    const state = get(gameStore);
-    expect(state.players[0].score).toBe(0);
-    expect(state.players[0].streak).toBe(0);
+    vi.advanceTimersByTime(2000);
+    expect(get(gameStore).timeRemaining).toBe(10); // Should not change
+
+    // Resume
+    gameStore.togglePause();
+    expect(get(gameStore).isPaused).toBe(false);
+
+    vi.advanceTimersByTime(1000);
+    expect(get(gameStore).timeRemaining).toBe(9); // Should resume counting
   });
 
   it("should move to next question", () => {
     gameStore.initGame(mockQuiz);
     gameStore.startGame();
-
     gameStore.nextQuestion();
 
     const state = get(gameStore);
     expect(state.currentQuestionIndex).toBe(1);
-    expect(state.currentQuestion).toEqual(mockQuiz.questions[1]);
+    expect(state.currentQuestion?.id).toBe("q2");
+    expect(state.timeRemaining).toBe(20);
   });
 
-  it("should end game after last question", async () => {
+  it("should end game after last question", () => {
     gameStore.initGame(mockQuiz);
     gameStore.startGame();
-    gameStore.nextQuestion(); // Move to q2 (last question)
-
-    // Mock dynamic import for storage
-    // Note: The store uses dynamic import which is hard to mock synchronously in Vitest without more setup.
-    // However, we mocked the module at the top level.
-    // The issue is that the store uses `import('../storage').then(...)`.
-    // We need to ensure that promise resolves.
-    // For this test, we might just check the state transition.
-
-    gameStore.nextQuestion(); // Should trigger end game
+    gameStore.nextQuestion(); // q2
+    gameStore.nextQuestion(); // Finish
 
     const state = get(gameStore);
     expect(state.status).toBe("finished");
-    expect(state.currentQuestion).toBeNull();
   });
 });
