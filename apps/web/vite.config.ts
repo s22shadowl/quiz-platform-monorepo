@@ -14,6 +14,9 @@ export default defineConfig({
         "*.config.{js,ts,cjs}",
         "**/*.test.{js,ts}",
         "src/app.html",
+        "src/routes/**", // Exclude routes until UI tests are implemented
+        ".svelte-kit/**",
+        "**/*.cjs",
       ],
     },
   },

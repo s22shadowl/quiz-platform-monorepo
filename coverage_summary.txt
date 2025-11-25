@@ -1,0 +1,79 @@
+
+> web@0.0.1 coverage
+> vitest run --coverage
+
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/jjerr/.gemini/antigravity/scratch/apps/web[39m
+[2m      Coverage enabled with [22m[33mv8[39m
+
+ [32m??[39m src/lib/utils/quizUtils.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m??[39m src/lib/stores/quizStore.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m??[39m src/lib/stores/gameStore.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+[2m   Start at [22m 21:30:24
+[2m   Duration [22m 959ms[2m (transform 327ms, setup 0ms, collect 970ms, tests 34ms, environment 1ms, prepare 619ms)[22m
+
+
+?   [35mdaisyUI[39m [2m4.12.24[22m
+?? [32m??[39m 6 themes added[2m		https://daisyui.com/docs/themes[22m
+?售? [32m??[39m [0mStar daisyUI on GitHub[0m	[2mhttps://github.com/saadeghi/daisyui[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   13.71 |    63.15 |   37.25 |   13.71 |                   
+ web               |       0 |        0 |       0 |       0 |                   
+  .eslintrc.cjs    |       0 |        0 |       0 |       0 | 1-30              
+ ...-kit/generated |       0 |        0 |       0 |       0 |                   
+  root.svelte      |       0 |        0 |       0 |       0 | 1-70              
+ ...nerated/client |       0 |        0 |       0 |       0 |                   
+  app.js           |       0 |        0 |       0 |       0 | 1-44              
+  matchers.js      |       0 |        0 |       0 |       0 | 1                 
+ ...d/client/nodes |       0 |        0 |       0 |       0 |                   
+  0.js             |       0 |        0 |       0 |       0 | 1                 
+  1.js             |       0 |        0 |       0 |       0 | 1                 
+  10.js            |       0 |        0 |       0 |       0 | 1                 
+  2.js             |       0 |        0 |       0 |       0 | 1                 
+  3.js             |       0 |        0 |       0 |       0 | 1                 
+  4.js             |       0 |        0 |       0 |       0 | 1                 
+  5.js             |       0 |        0 |       0 |       0 | 1                 
+  6.js             |       0 |        0 |       0 |       0 | 1                 
+  7.js             |       0 |        0 |       0 |       0 | 1                 
+  8.js             |       0 |        0 |       0 |       0 | 1                 
+  9.js             |       0 |        0 |       0 |       0 | 1                 
+ ...nerated/server |       0 |        0 |       0 |       0 |                   
+  internal.js      |       0 |        0 |       0 |       0 | 1-53              
+ web/src/lib       |       0 |        0 |       0 |       0 |                   
+  connection.ts    |       0 |        0 |       0 |       0 | 1-189             
+  storage.ts       |       0 |        0 |       0 |       0 | 1-55              
+ ...lib/components |       0 |        0 |       0 |       0 |                   
+  ...Editor.svelte |       0 |        0 |       0 |       0 | 1-328             
+ ...src/lib/stores |   79.01 |    83.75 |      85 |   79.01 |                   
+  ...ctionStore.ts |       0 |        0 |       0 |       0 | 1-58              
+  gameStore.ts     |   89.91 |    83.82 |   85.71 |   89.91 | ...87-314,318-319 
+  quizStore.ts     |   97.67 |     90.9 |     100 |   97.67 | 30                
+ web/src/lib/utils |     100 |      100 |     100 |     100 |                   
+  quizUtils.ts     |     100 |      100 |     100 |     100 |                   
+ web/src/routes    |       0 |        0 |       0 |       0 |                   
+  +layout.svelte   |       0 |        0 |       0 |       0 | 1-5               
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-115             
+ ...rc/routes/host |       0 |        0 |       0 |       0 |                   
+  +layout.svelte   |       0 |        0 |       0 |       0 | 1-35              
+ ...host/game/[id] |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-302             
+ ...s/host/history |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-73              
+ ...tes/host/lobby |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-166             
+ ...s/host/quizzes |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-191             
+ ...t/quizzes/[id] |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-250             
+ ...rc/routes/join |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-108             
+ ...rc/routes/play |       0 |        0 |       0 |       0 |                   
+  +page.svelte     |       0 |        0 |       0 |       0 | 1-277             
+-------------------|---------|----------|---------|---------|-------------------
