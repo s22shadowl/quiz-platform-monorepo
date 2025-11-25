@@ -12,14 +12,18 @@
     if (!roomId || !nickname) return
 
     isConnecting = true
-    connectionStore.setConnecting(true)
+    connectionStore.setStatus("connecting")
 
     try {
       await connectionManager.connectToHost(roomId, nickname)
+      // Save session for auto-reconnect
+      sessionStorage.setItem("hostId", roomId)
+      sessionStorage.setItem("nickname", nickname)
       goto("/play")
     } catch {
       error = "Failed to connect. Check Room ID."
       isConnecting = false
+      connectionStore.setStatus("disconnected")
     }
   }
 </script>

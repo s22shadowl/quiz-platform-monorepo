@@ -4,37 +4,53 @@ export interface ConnectionState {
   peerId: string | null;
   connectedPeers: string[];
   error: string | null;
-  isConnecting: boolean;
+  status: ConnectionStatus;
 }
 
+export type ConnectionStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting";
+
 function createConnectionStore() {
-  const { subscribe, set, update } = writable<ConnectionState>({
+  const { subscribe, update, set } = writable<{
+    peerId: string | null;
+    connectedPeers: string[];
+    error: string | null;
+    status: ConnectionStatus;
+  }>({
     peerId: null,
     connectedPeers: [],
     error: null,
-    isConnecting: false,
+    status: "disconnected",
   });
 
   return {
     subscribe,
     setPeerId: (id: string) =>
-      update((s) => ({ ...s, peerId: id, error: null })),
+      update((s) => ({ ...s, peerId: id, status: "connected" })), // Assuming getting ID means we are ready
     addConnection: (peerId: string) =>
-      update((s) => ({ ...s, connectedPeers: [...s.connectedPeers, peerId] })),
+      update((s) => ({
+        ...s,
+        connectedPeers: [...s.connectedPeers, peerId],
+        status: "connected",
+      })),
     removeConnection: (peerId: string) =>
       update((s) => ({
         ...s,
-        connectedPeers: s.connectedPeers.filter((id) => id !== peerId),
+        connectedPeers: s.connectedPeers.filter((p) => p !== peerId),
+        // If no peers left and we are client, maybe disconnected?
+        // But for now just remove peer.
       })),
     setError: (error: string) => update((s) => ({ ...s, error })),
-    setConnecting: (isConnecting: boolean) =>
-      update((s) => ({ ...s, isConnecting })),
+    setStatus: (status: ConnectionStatus) => update((s) => ({ ...s, status })),
     reset: () =>
       set({
         peerId: null,
         connectedPeers: [],
         error: null,
-        isConnecting: false,
+        status: "disconnected",
       }),
   };
 }

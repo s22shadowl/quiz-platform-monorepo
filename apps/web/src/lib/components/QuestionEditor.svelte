@@ -8,24 +8,47 @@
   const dispatch = createEventDispatcher<{
     update: Question
     delete: void
+    moveUp: void
+    moveDown: void
   }>()
 
   function updateField(
     field: keyof Question,
-    value: string | number | string[],
+    value: string | number | string[] | undefined,
   ) {
     dispatch("update", { ...question, [field]: value })
   }
 
   function updateOption(optIndex: number, value: string) {
     const newOptions = [...question.options]
+    const oldOption = newOptions[optIndex]
     newOptions[optIndex] = value
-    // If the changed option was the correct answer, update that too (optional logic, but good for UX)
-    if (question.options[optIndex] === question.correctAnswer) {
-      updateField("correctAnswer", value)
+
+    // Update correct answer(s) if the option text changed
+    if (question.type === "multiple_choice") {
+      if (question.correctAnswers?.includes(oldOption)) {
+        const newCorrectAnswers = question.correctAnswers.map((a) =>
+          a === oldOption ? value : a,
+        )
+        updateField("correctAnswers", newCorrectAnswers)
+      }
     } else {
-      updateField("options", newOptions)
+      if (question.correctAnswer === oldOption) {
+        updateField("correctAnswer", value)
+      }
     }
+    updateField("options", newOptions)
+  }
+
+  function toggleCorrectAnswer(option: string) {
+    const current = question.correctAnswers || []
+    let newCorrectAnswers: string[]
+    if (current.includes(option)) {
+      newCorrectAnswers = current.filter((a) => a !== option)
+    } else {
+      newCorrectAnswers = [...current, option]
+    }
+    updateField("correctAnswers", newCorrectAnswers)
   }
 
   function addOption() {
@@ -38,8 +61,29 @@
 
   function removeOption(optIndex: number) {
     if (question.options.length <= 2) return // Minimum 2 options
+    const removedOption = question.options[optIndex]
     const newOptions = question.options.filter((_, i) => i !== optIndex)
+
+    // Clean up correct answer(s)
+    if (question.type === "multiple_choice") {
+      if (question.correctAnswers?.includes(removedOption)) {
+        const newCorrectAnswers = question.correctAnswers.filter(
+          (a) => a !== removedOption,
+        )
+        updateField("correctAnswers", newCorrectAnswers)
+      }
+    } else {
+      if (question.correctAnswer === removedOption) {
+        updateField("correctAnswer", newOptions[0] || "")
+      }
+    }
+
     updateField("options", newOptions)
+  }
+
+  function handleImageError(e: Event) {
+    const img = e.currentTarget as HTMLImageElement
+    img.style.display = "none"
   }
 </script>
 
@@ -47,24 +91,64 @@
   <div class="card-body p-6">
     <div class="flex justify-between items-start">
       <h3 class="card-title text-lg">題目 {index}</h3>
-      <button
-        class="btn btn-square btn-ghost btn-sm text-error"
-        on:click={() => dispatch("delete")}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          ><path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          /></svg
+      <div class="flex gap-2">
+        <button
+          class="btn btn-square btn-ghost btn-sm"
+          on:click={() => dispatch("moveUp")}
+          disabled={index === 1}
+          title="上移"
         >
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+        <button
+          class="btn btn-square btn-ghost btn-sm"
+          on:click={() => dispatch("moveDown")}
+          title="下移"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+        <button
+          class="btn btn-square btn-ghost btn-sm text-error"
+          on:click={() => dispatch("delete")}
+          title="刪除"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            ><path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            /></svg
+          >
+        </button>
+      </div>
     </div>
 
     <!-- Question Text -->
@@ -82,6 +166,23 @@
       />
     </div>
 
+    <!-- Question Type -->
+    <div class="form-control w-full mt-2">
+      <label class="label py-1" for={`question-type-${question.id}`}>
+        <span class="label-text-alt">題目類型</span>
+      </label>
+      <select
+        id={`question-type-${question.id}`}
+        class="select select-bordered select-sm"
+        value={question.type}
+        on:change={(e) => updateField("type", e.currentTarget.value)}
+      >
+        <option value="choice">單選題 (Choice)</option>
+        <option value="multiple_choice">複選題 (Multiple Choice)</option>
+        <option value="text">簡答題 (Short Answer)</option>
+      </select>
+    </div>
+
     <!-- Media URL -->
     <div class="form-control w-full mt-2">
       <label class="label py-1" for={`media-url-${question.id}`}>
@@ -95,6 +196,21 @@
         class="input input-bordered input-sm"
         placeholder="https://..."
       />
+      {#if question.mediaUrl}
+        <div
+          class="mt-2 rounded-lg overflow-hidden border border-base-300 bg-base-200 flex justify-center items-center h-48 relative"
+        >
+          <img
+            src={question.mediaUrl}
+            alt="Preview"
+            class="max-h-full max-w-full object-contain"
+            on:error={handleImageError}
+          />
+          <span class="absolute text-xs text-base-content/50 -z-10"
+            >預覽圖片</span
+          >
+        </div>
+      {/if}
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -141,54 +257,72 @@
     </div>
 
     <!-- Options -->
-    <div class="divider my-2">選項</div>
-    <div class="space-y-2">
-      {#each question.options as option, i}
-        <div class="flex items-center gap-2">
-          <input
-            type="radio"
-            name={`correct-${question.id}`}
-            class="radio radio-primary"
-            checked={question.correctAnswer === option}
-            on:change={() => updateField("correctAnswer", option)}
-          />
-          <input
-            type="text"
-            value={option}
-            on:input={(e) => updateOption(i, e.currentTarget.value)}
-            class="input input-bordered input-sm w-full"
-            class:input-primary={question.correctAnswer === option}
-          />
-          <button
-            class="btn btn-square btn-ghost btn-sm"
-            disabled={question.options.length <= 2}
-            on:click={() => removeOption(i)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              ><path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M20 12H4"
-              /></svg
+    {#if question.type === "text"}
+      <div class="divider my-2">答案設定</div>
+      <div class="alert alert-info text-sm">
+        簡答題需由主持人手動評分，無須設定標準答案。
+      </div>
+    {:else}
+      <div class="divider my-2">選項</div>
+      <div class="space-y-2">
+        {#each question.options as option, i}
+          <div class="flex items-center gap-2">
+            {#if question.type === "multiple_choice"}
+              <input
+                type="checkbox"
+                class="checkbox checkbox-primary"
+                checked={question.correctAnswers?.includes(option)}
+                on:change={() => toggleCorrectAnswer(option)}
+              />
+            {:else}
+              <input
+                type="radio"
+                name={`correct-${question.id}`}
+                class="radio radio-primary"
+                checked={question.correctAnswer === option}
+                on:change={() => updateField("correctAnswer", option)}
+              />
+            {/if}
+            <input
+              type="text"
+              value={option}
+              on:input={(e) => updateOption(i, e.currentTarget.value)}
+              class="input input-bordered input-sm w-full"
+              class:input-primary={question.type === "multiple_choice"
+                ? question.correctAnswers?.includes(option)
+                : question.correctAnswer === option}
+            />
+            <button
+              class="btn btn-square btn-ghost btn-sm"
+              disabled={question.options.length <= 2}
+              on:click={() => removeOption(i)}
             >
-          </button>
-        </div>
-      {/each}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                ><path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20 12H4"
+                /></svg
+              >
+            </button>
+          </div>
+        {/each}
 
-      {#if question.options.length < 6}
-        <button
-          class="btn btn-ghost btn-sm btn-block mt-2 border-dashed border-2 border-base-300"
-          on:click={addOption}
-        >
-          + 新增選項
-        </button>
-      {/if}
-    </div>
+        {#if question.options.length < 6}
+          <button
+            class="btn btn-ghost btn-sm btn-block mt-2 border-dashed border-2 border-base-300"
+            on:click={addOption}
+          >
+            + 新增選項
+          </button>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>

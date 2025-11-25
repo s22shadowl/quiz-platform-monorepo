@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 import type { Quiz, Question, Player } from "../types";
 import { connectionManager } from "../connection";
 
-export type GameStatus = "lobby" | "playing" | "finished";
+export type GameStatus = "lobby" | "playing" | "review" | "finished";
 
 export interface GameState {
   status: GameStatus;
@@ -13,6 +13,8 @@ export interface GameState {
   timeRemaining: number;
   isPaused: boolean;
   answeredPlayerIds: string[]; // Track who answered current question
+  currentAnswers: Record<string, string>; // playerId -> answer
+  gradedPlayerIds: string[];
 }
 
 function createGameStore() {
@@ -25,6 +27,8 @@ function createGameStore() {
     timeRemaining: 0,
     isPaused: false,
     answeredPlayerIds: [],
+    currentAnswers: {},
+    gradedPlayerIds: [],
   };
 
   const { subscribe, set, update } = writable<GameState>(initialState);
@@ -48,10 +52,40 @@ function createGameStore() {
 
     addPlayer: (id: string, nickname: string) => {
       update((state) => {
-        if (state.players.find((p) => p.id === id)) return state;
-        const newPlayer: Player = { id, nickname, score: 0, streak: 0 };
+        const existingPlayer = state.players.find((p) => p.id === id);
+        if (existingPlayer) {
+          // Player reconnected
+          const updatedPlayers = state.players.map((p) =>
+            p.id === id ? { ...p, isOnline: true } : p,
+          );
+          const newState = { ...state, players: updatedPlayers };
+          connectionManager.broadcast({
+            type: "GAME_STATE",
+            payload: newState,
+          });
+          return newState;
+        }
+
+        const newPlayer: Player = {
+          id,
+          nickname,
+          score: 0,
+          streak: 0,
+          isOnline: true,
+        };
         const newState = { ...state, players: [...state.players, newPlayer] };
         // Broadcast updated player list
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+    },
+
+    setPlayerOffline: (id: string) => {
+      update((state) => {
+        const updatedPlayers = state.players.map((p) =>
+          p.id === id ? { ...p, isOnline: false } : p,
+        );
+        const newState = { ...state, players: updatedPlayers };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
@@ -68,11 +102,28 @@ function createGameStore() {
           timeRemaining: state.quiz.questions[0].timeLimit,
           isPaused: false,
           answeredPlayerIds: [],
+          currentAnswers: {},
+          gradedPlayerIds: [],
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
       });
       startTimer();
+    },
+
+    goToReview: () => {
+      update((state) => {
+        if (state.status !== "playing") return state;
+
+        const newState = {
+          ...state,
+          status: "review" as GameStatus,
+          isPaused: false, // Ensure timer is stopped/paused effectively
+        };
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+      clearInterval(timerInterval);
     },
 
     nextQuestion: () => {
@@ -94,6 +145,9 @@ function createGameStore() {
             status: "finished" as GameStatus,
             currentQuestion: null,
             isPaused: false,
+            answeredPlayerIds: [],
+            currentAnswers: {},
+            gradedPlayerIds: [],
           };
           connectionManager.broadcast({
             type: "GAME_STATE",
@@ -110,6 +164,8 @@ function createGameStore() {
           timeRemaining: nextQuestion.timeLimit,
           isPaused: false,
           answeredPlayerIds: [],
+          currentAnswers: {},
+          gradedPlayerIds: [],
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;
@@ -136,25 +192,75 @@ function createGameStore() {
           return state;
         }
 
-        // Check if player has already answered this question
-        // We need to track this. Since we don't have a separate "answers" map in GameState yet,
-        // we can infer it if we want, OR better, add a `lastAnsweredQuestionId` to Player.
-        // For now, let's add a simple check: if the player's score/streak updated for this question?
-        // Actually, the best way is to track `answeredPlayers` set in the state for the current question.
-        // Let's modify GameState to include `answeredPlayerIds`.
-
-        // WAIT: Modifying GameState interface requires updating initial state and types.
-        // Let's check if we can do it with existing structures.
-        // If we don't track it, we can't prevent double answering on the server side easily without adding state.
-        // Let's add `answeredPlayerIds` to GameState.
-
         if (state.answeredPlayerIds.includes(playerId)) {
           return state;
         }
 
-        const isCorrect = option === state.currentQuestion.correctAnswer;
-        const points = isCorrect ? state.currentQuestion.points : 0;
+        // Store the answer
+        const newAnswers = { ...state.currentAnswers, [playerId]: option };
 
+        // Calculate score
+        let updatedPlayers = state.players;
+        let isCorrect = false;
+
+        if (state.currentQuestion.type === "text") {
+          // Manual grading, no auto score
+        } else if (state.currentQuestion.type === "multiple_choice") {
+          try {
+            const selectedOptions = JSON.parse(option) as string[];
+            const correctOptions = state.currentQuestion.correctAnswers || [];
+
+            // Check if arrays have same elements (ignoring order)
+            if (selectedOptions.length === correctOptions.length) {
+              const sortedSelected = [...selectedOptions].sort();
+              const sortedCorrect = [...correctOptions].sort();
+              isCorrect = sortedSelected.every(
+                (val, index) => val === sortedCorrect[index],
+              );
+            }
+          } catch (e) {
+            console.error("Failed to parse multiple choice answer", e);
+            isCorrect = false;
+          }
+        } else {
+          // Single choice
+          isCorrect = option === state.currentQuestion.correctAnswer;
+        }
+
+        if (state.currentQuestion.type !== "text") {
+          const points = isCorrect ? state.currentQuestion.points : 0;
+
+          updatedPlayers = state.players.map((p) => {
+            if (p.id === playerId) {
+              return {
+                ...p,
+                score: p.score + points,
+                streak: isCorrect ? p.streak + 1 : 0,
+              };
+            }
+            return p;
+          });
+          // Sort players by score descending
+          updatedPlayers.sort((a, b) => b.score - a.score);
+        }
+
+        const newState = {
+          ...state,
+          players: updatedPlayers,
+          answeredPlayerIds: [...state.answeredPlayerIds, playerId],
+          currentAnswers: newAnswers,
+        };
+        connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
+        return newState;
+      });
+    },
+
+    gradeAnswer: (playerId: string, isCorrect: boolean) => {
+      update((state) => {
+        if (!state.currentQuestion || state.gradedPlayerIds.includes(playerId))
+          return state;
+
+        const points = isCorrect ? state.currentQuestion.points : 0;
         const updatedPlayers = state.players.map((p) => {
           if (p.id === playerId) {
             return {
@@ -165,14 +271,12 @@ function createGameStore() {
           }
           return p;
         });
-
-        // Sort players by score descending
         updatedPlayers.sort((a, b) => b.score - a.score);
 
         const newState = {
           ...state,
           players: updatedPlayers,
-          answeredPlayerIds: [...state.answeredPlayerIds, playerId],
+          gradedPlayerIds: [...state.gradedPlayerIds, playerId],
         };
         connectionManager.broadcast({ type: "GAME_STATE", payload: newState });
         return newState;

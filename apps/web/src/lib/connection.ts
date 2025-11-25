@@ -19,6 +19,9 @@ export class ConnectionManager {
   async init(options: { id?: string; isHost?: boolean } = {}): Promise<string> {
     const { id, isHost } = options;
     this.isHost = isHost ?? !id; // Default logic: if no ID, assume host (unless specified)
+
+    connectionStore.setStatus("connecting");
+
     return new Promise((resolve, reject) => {
       // Use a public PeerJS server for now, can be configured for self-hosted later
       this.peer = id ? new Peer(id) : new Peer();
@@ -26,6 +29,7 @@ export class ConnectionManager {
       this.peer.on("open", (peerId) => {
         console.log("My peer ID is: " + peerId);
         connectionStore.setPeerId(peerId);
+        connectionStore.setStatus("connected");
         resolve(peerId);
       });
 
@@ -36,7 +40,15 @@ export class ConnectionManager {
       this.peer.on("error", (err) => {
         console.error("PeerJS error:", err);
         connectionStore.setError(err.message);
+        connectionStore.setStatus("disconnected");
         reject(err);
+      });
+
+      this.peer.on("disconnected", () => {
+        console.log("Peer disconnected from server");
+        connectionStore.setStatus("disconnected");
+        // Optional: Auto-reconnect to server
+        // this.peer?.reconnect();
       });
     });
   }
@@ -68,6 +80,12 @@ export class ConnectionManager {
       console.log("Connection closed: " + conn.peer);
       this.connections.delete(conn.peer);
       connectionStore.removeConnection(conn.peer);
+
+      if (this.isHost) {
+        import("./stores/gameStore").then(({ gameStore }) => {
+          gameStore.setPlayerOffline(conn.peer);
+        });
+      }
     });
   }
 
@@ -102,6 +120,24 @@ export class ConnectionManager {
           });
         }
         break;
+    }
+  }
+
+  async reconnect(hostId: string, nickname: string) {
+    connectionStore.setStatus("reconnecting");
+    try {
+      if (!this.peer || this.peer.destroyed) {
+        await this.init({ isHost: false });
+      } else if (this.peer.disconnected) {
+        this.peer.reconnect();
+      }
+
+      await this.connectToHost(hostId, nickname);
+    } catch (err) {
+      console.error("Reconnect failed:", err);
+      connectionStore.setStatus("disconnected");
+      connectionStore.setError("重連失敗，請重新加入");
+      throw err;
     }
   }
 

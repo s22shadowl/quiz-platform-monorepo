@@ -1,4 +1,8 @@
-export type QuestionType = "choice" | "text" | "quick_answer";
+export type QuestionType =
+  | "choice"
+  | "text"
+  | "quick_answer"
+  | "multiple_choice";
 
 export interface Question {
   id: string;
@@ -6,6 +10,7 @@ export interface Question {
   type: QuestionType;
   options: string[];
   correctAnswer?: string;
+  correctAnswers?: string[]; // For multiple_choice
   mediaUrl?: string;
   timeLimit: number;
   points: number;
@@ -25,6 +30,7 @@ export interface Player {
   nickname: string;
   score: number;
   streak: number;
+  isOnline: boolean;
   rank?: number;
 }
 

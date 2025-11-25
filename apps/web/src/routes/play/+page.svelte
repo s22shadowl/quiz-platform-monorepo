@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte"
   import { gameStore } from "$lib/stores/gameStore"
   import { connectionManager } from "$lib/connection"
   import { connectionStore } from "$lib/stores/connectionStore"
@@ -6,12 +7,31 @@
 
   let hasAnswered = false
   let selectedOption: string | null = null
+  let selectedOptions: string[] = []
 
   // Reset local state when question changes
   $: if ($gameStore.currentQuestionIndex) {
     hasAnswered = false
     selectedOption = null
+    selectedOptions = []
   }
+
+  onMount(async () => {
+    // Check for existing session
+    const savedHostId = sessionStorage.getItem("hostId")
+    const savedNickname = sessionStorage.getItem("nickname")
+
+    if (!$connectionStore.peerId && savedHostId && savedNickname) {
+      console.log("Found saved session, attempting reconnect...")
+      try {
+        await connectionManager.reconnect(savedHostId, savedNickname)
+      } catch (err) {
+        console.error("Auto-reconnect failed", err)
+        sessionStorage.removeItem("hostId")
+        sessionStorage.removeItem("nickname")
+      }
+    }
+  })
 
   function sendAnswer(option: string) {
     if (hasAnswered || $gameStore.timeRemaining <= 0 || $gameStore.isPaused)
@@ -28,16 +48,43 @@
     console.log("Answer selected:", option)
   }
 
+  function toggleOption(option: string) {
+    if (hasAnswered || $gameStore.timeRemaining <= 0 || $gameStore.isPaused)
+      return
+
+    if (selectedOptions.includes(option)) {
+      selectedOptions = selectedOptions.filter((o) => o !== option)
+    } else {
+      selectedOptions = [...selectedOptions, option]
+    }
+  }
+
+  function submitMultipleChoice() {
+    if (selectedOptions.length === 0) return
+    sendAnswer(JSON.stringify(selectedOptions))
+  }
+
   function goHome() {
-    // Clean up connection if needed, though navigation usually handles it.
-    // For P2P, it's good to explicitly close if we are leaving for good.
-    // But here we might just want to go back to home.
+    sessionStorage.removeItem("hostId")
+    sessionStorage.removeItem("nickname")
+    connectionManager.destroy()
     goto("/")
   }
 </script>
 
 <div class="container mx-auto p-4 max-w-md min-h-screen flex flex-col">
-  {#if !$connectionStore.peerId}
+  <!-- Connection Status Indicator -->
+  <div class="fixed top-2 right-2 z-50">
+    {#if $connectionStore.status === "connecting" || $connectionStore.status === "reconnecting"}
+      <div class="badge badge-warning gap-2 animate-pulse">連線中...</div>
+    {:else if $connectionStore.status === "disconnected"}
+      <div class="badge badge-error gap-2">已斷線</div>
+    {:else if $connectionStore.status === "connected"}
+      <div class="badge badge-success badge-xs p-1"></div>
+    {/if}
+  </div>
+
+  {#if $connectionStore.status === "disconnected" && !$connectionStore.peerId}
     <div class="alert alert-warning shadow-lg my-auto">
       <div>
         <svg
@@ -89,19 +136,71 @@
       </div>
 
       <div class="grid grid-cols-1 gap-3">
-        {#each $gameStore.currentQuestion.options as option}
+        {#if $gameStore.currentQuestion.type === "text"}
+          <div class="form-control">
+            <textarea
+              class="textarea textarea-bordered h-24 text-lg"
+              placeholder="請輸入答案..."
+              bind:value={selectedOption}
+              disabled={hasAnswered ||
+                $gameStore.timeRemaining <= 0 ||
+                $gameStore.isPaused}
+            ></textarea>
+            <button
+              class="btn btn-primary mt-4"
+              on:click={() => selectedOption && sendAnswer(selectedOption)}
+              disabled={!selectedOption ||
+                hasAnswered ||
+                $gameStore.timeRemaining <= 0 ||
+                $gameStore.isPaused}
+            >
+              送出答案
+            </button>
+          </div>
+        {:else if $gameStore.currentQuestion.type === "multiple_choice"}
+          {#each $gameStore.currentQuestion.options as option}
+            <button
+              class="btn btn-lg h-auto py-4 text-lg
+                {selectedOptions.includes(option)
+                ? 'btn-primary'
+                : 'btn-outline'}
+                {hasAnswered ? 'opacity-50' : ''}"
+              on:click={() => toggleOption(option)}
+              disabled={$gameStore.isPaused ||
+                hasAnswered ||
+                $gameStore.timeRemaining <= 0}
+            >
+              {option}
+              {#if selectedOptions.includes(option)}
+                <span class="ml-2 badge badge-sm">✓</span>
+              {/if}
+            </button>
+          {/each}
           <button
-            class="btn btn-lg h-auto py-4 text-lg
-            {selectedOption === option ? 'btn-primary' : 'btn-outline'}
-            {hasAnswered && selectedOption !== option ? 'opacity-50' : ''}"
-            on:click={() => sendAnswer(option)}
-            disabled={$gameStore.isPaused ||
+            class="btn btn-success mt-4"
+            on:click={submitMultipleChoice}
+            disabled={selectedOptions.length === 0 ||
               hasAnswered ||
-              $gameStore.timeRemaining <= 0}
+              $gameStore.timeRemaining <= 0 ||
+              $gameStore.isPaused}
           >
-            {option}
+            送出答案 ({selectedOptions.length})
           </button>
-        {/each}
+        {:else}
+          {#each $gameStore.currentQuestion.options as option}
+            <button
+              class="btn btn-lg h-auto py-4 text-lg
+                {selectedOption === option ? 'btn-primary' : 'btn-outline'}
+                {hasAnswered && selectedOption !== option ? 'opacity-50' : ''}"
+              on:click={() => sendAnswer(option)}
+              disabled={$gameStore.isPaused ||
+                hasAnswered ||
+                $gameStore.timeRemaining <= 0}
+            >
+              {option}
+            </button>
+          {/each}
+        {/if}
       </div>
 
       {#if hasAnswered}
@@ -113,6 +212,40 @@
           時間到！等待主持人...
         </div>
       {/if}
+    </div>
+  {:else if $gameStore.status === "review"}
+    <div class="hero my-auto">
+      <div class="hero-content text-center">
+        <div class="max-w-md">
+          <h2 class="text-3xl font-bold mb-4">答案審閱</h2>
+
+          {#if $gameStore.currentQuestion}
+            <div class="mb-6">
+              <p class="text-lg mb-2">{$gameStore.currentQuestion.text}</p>
+              <div class="alert alert-success">
+                <span class="font-bold"
+                  >正確答案: {$gameStore.currentQuestion.correctAnswer}</span
+                >
+              </div>
+            </div>
+
+            {#if $connectionStore.peerId}
+              {@const myPlayer = $gameStore.players.find(
+                (p) => p.id === $connectionStore.peerId,
+              )}
+              {#if myPlayer}
+                <div class="stat bg-base-200 rounded-box">
+                  <div class="stat-title">目前得分</div>
+                  <div class="stat-value">{myPlayer.score}</div>
+                </div>
+              {/if}
+            {/if}
+          {/if}
+
+          <p class="py-4 text-base-content/60">等待主持人進入下一題...</p>
+          <div class="loading loading-dots loading-md"></div>
+        </div>
+      </div>
     </div>
   {:else if $gameStore.status === "finished"}
     <div class="hero my-auto">

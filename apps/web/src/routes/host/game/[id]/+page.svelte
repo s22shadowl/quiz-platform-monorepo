@@ -175,7 +175,76 @@
               {/if}
 
               <div class="card-actions justify-end mt-8">
-                <button class="btn btn-secondary" on:click={nextQuestion}
+                <button
+                  class="btn btn-secondary"
+                  on:click={gameStore.goToReview}>查看結果 (Review)</button
+                >
+              </div>
+            </div>
+          </div>
+        {:else if $gameStore.status === "review"}
+          <div class="card bg-base-100 shadow-xl border border-base-300">
+            <div class="card-body">
+              <h2 class="card-title text-2xl mb-4">答案審閱</h2>
+
+              {#if $gameStore.currentQuestion}
+                <div class="mb-6">
+                  <h3 class="font-bold text-lg">
+                    {$gameStore.currentQuestion.text}
+                  </h3>
+                  <div class="text-success font-bold mt-2">
+                    正確答案: {$gameStore.currentQuestion.correctAnswer}
+                  </div>
+                  <!-- Future: Add explanation here -->
+                </div>
+
+                <div class="divider">玩家作答情形</div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {#each $gameStore.players as player}
+                    {#if $gameStore.currentAnswers[player.id]}
+                      <div class="card bg-base-200 shadow-sm">
+                        <div class="card-body p-4">
+                          <h4 class="font-bold">{player.nickname}</h4>
+                          <p class="text-lg my-2 p-2 bg-base-100 rounded">
+                            {$gameStore.currentAnswers[player.id]}
+                          </p>
+
+                          {#if $gameStore.currentQuestion.type === "text"}
+                            <div class="flex gap-2 justify-end">
+                              {#if $gameStore.gradedPlayerIds.includes(player.id)}
+                                <span class="badge badge-info">已評分</span>
+                              {:else}
+                                <button
+                                  class="btn btn-sm btn-success"
+                                  on:click={() =>
+                                    gameStore.gradeAnswer(player.id, true)}
+                                >
+                                  正確
+                                </button>
+                                <button
+                                  class="btn btn-sm btn-error"
+                                  on:click={() =>
+                                    gameStore.gradeAnswer(player.id, false)}
+                                >
+                                  錯誤
+                                </button>
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+
+                <div class="alert alert-info mt-4">
+                  <span>在此階段，主持人可以講解題目與答案。</span>
+                </div>
+              {/if}
+
+              <div class="card-actions justify-end mt-8">
+                <button class="btn btn-primary" on:click={nextQuestion}
                   >下一題</button
                 >
               </div>
@@ -209,8 +278,13 @@
               </thead>
               <tbody>
                 {#each $gameStore.players as player}
-                  <tr>
-                    <td class="font-bold">{player.nickname}</td>
+                  <tr class:opacity-50={!player.isOnline}>
+                    <td class="font-bold flex items-center gap-2">
+                      {player.nickname}
+                      {#if !player.isOnline}
+                        <span class="badge badge-xs badge-error">離線</span>
+                      {/if}
+                    </td>
                     <td class="text-right">{player.score}</td>
                   </tr>
                 {/each}
