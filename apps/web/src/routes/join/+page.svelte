@@ -3,10 +3,10 @@
   import { connectionStore } from "$lib/stores/connectionStore"
   import { goto } from "$app/navigation"
 
-  let roomId = ""
-  let nickname = ""
-  let isConnecting = false
-  let error = ""
+  let roomId = $state("")
+  let nickname = $state("")
+  let isConnecting = $state(false)
+  let error = $state("")
 
   async function joinGame() {
     if (!roomId || !nickname) return
@@ -86,7 +86,7 @@
       <div class="card-actions justify-end mt-8">
         <button
           class="btn btn-primary w-full text-lg"
-          on:click={joinGame}
+          onclick={joinGame}
           disabled={isConnecting}
         >
           {#if isConnecting}

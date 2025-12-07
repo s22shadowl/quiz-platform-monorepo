@@ -1,20 +1,24 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { onMount } from "svelte"
   import { gameStore } from "$lib/stores/gameStore"
   import { connectionManager } from "$lib/connection"
   import { connectionStore } from "$lib/stores/connectionStore"
   import { goto } from "$app/navigation"
 
-  let hasAnswered = false
-  let selectedOption: string | null = null
-  let selectedOptions: string[] = []
+  let hasAnswered = $state(false)
+  let selectedOption: string | null = $state(null)
+  let selectedOptions: string[] = $state([])
 
   // Reset local state when question changes
-  $: if ($gameStore.currentQuestionIndex) {
-    hasAnswered = false
-    selectedOption = null
-    selectedOptions = []
-  }
+  run(() => {
+    if ($gameStore.currentQuestionIndex) {
+      hasAnswered = false
+      selectedOption = null
+      selectedOptions = []
+    }
+  });
 
   onMount(async () => {
     // Check for existing session
@@ -148,7 +152,7 @@
             ></textarea>
             <button
               class="btn btn-primary mt-4"
-              on:click={() => selectedOption && sendAnswer(selectedOption)}
+              onclick={() => selectedOption && sendAnswer(selectedOption)}
               disabled={!selectedOption ||
                 hasAnswered ||
                 $gameStore.timeRemaining <= 0 ||
@@ -165,7 +169,7 @@
                 ? 'btn-primary'
                 : 'btn-outline'}
                 {hasAnswered ? 'opacity-50' : ''}"
-              on:click={() => toggleOption(option)}
+              onclick={() => toggleOption(option)}
               disabled={$gameStore.isPaused ||
                 hasAnswered ||
                 $gameStore.timeRemaining <= 0}
@@ -178,7 +182,7 @@
           {/each}
           <button
             class="btn btn-success mt-4"
-            on:click={submitMultipleChoice}
+            onclick={submitMultipleChoice}
             disabled={selectedOptions.length === 0 ||
               hasAnswered ||
               $gameStore.timeRemaining <= 0 ||
@@ -192,7 +196,7 @@
               class="btn btn-lg h-auto py-4 text-lg
                 {selectedOption === option ? 'btn-primary' : 'btn-outline'}
                 {hasAnswered && selectedOption !== option ? 'opacity-50' : ''}"
-              on:click={() => sendAnswer(option)}
+              onclick={() => sendAnswer(option)}
               disabled={$gameStore.isPaused ||
                 hasAnswered ||
                 $gameStore.timeRemaining <= 0}
@@ -267,7 +271,7 @@
             {/if}
           {/if}
 
-          <button class="btn btn-primary btn-wide" on:click={goHome}
+          <button class="btn btn-primary btn-wide" onclick={goHome}
             >回到首頁</button
           >
         </div>

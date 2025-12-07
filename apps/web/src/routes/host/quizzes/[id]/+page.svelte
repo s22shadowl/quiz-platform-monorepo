@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { page } from "$app/stores"
   import { onMount } from "svelte"
   import { beforeNavigate } from "$app/navigation"
@@ -7,19 +9,23 @@
   import { v4 as uuidv4 } from "uuid"
   import QuestionEditor from "$lib/components/QuestionEditor.svelte"
 
-  let quizId: string
-  let draftQuiz: Quiz | undefined
-  let isDirty = false
+  let quizId: string = $state()
+  let draftQuiz: Quiz | undefined = $state()
+  let isDirty = $state(false)
 
-  $: quizId = $page.params.id ?? ""
+  run(() => {
+    quizId = $page.params.id ?? ""
+  });
 
   // Initialize draftQuiz when store is loaded
-  $: if (!draftQuiz && $quizStore.length > 0 && quizId) {
-    const found = $quizStore.find((q) => q.id === quizId)
-    if (found) {
-      draftQuiz = JSON.parse(JSON.stringify(found))
+  run(() => {
+    if (!draftQuiz && $quizStore.length > 0 && quizId) {
+      const found = $quizStore.find((q) => q.id === quizId)
+      if (found) {
+        draftQuiz = JSON.parse(JSON.stringify(found))
+      }
     }
-  }
+  });
 
   onMount(() => {
     quizStore.load()
@@ -42,7 +48,7 @@
     }
   }
 
-  let lastSaved: number | null = null
+  let lastSaved: number | null = $state(null)
   let saveTimeout: ReturnType<typeof setTimeout>
 
   function showSaveFeedback() {
@@ -123,7 +129,7 @@
   }
 </script>
 
-<svelte:window on:beforeunload={handleBeforeUnload} />
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <div class="container mx-auto p-4 max-w-4xl">
   <div class="flex justify-between items-center mb-4">
@@ -159,7 +165,7 @@
       <button
         class="btn btn-primary"
         disabled={!isDirty}
-        on:click={saveChanges}
+        onclick={saveChanges}
       >
         儲存變更
       </button>
@@ -177,7 +183,7 @@
             id="quiz-title"
             type="text"
             value={draftQuiz.title}
-            on:input={updateTitle}
+            oninput={updateTitle}
             class="input input-bordered w-full text-xl font-bold focus:input-primary"
           />
         </div>
@@ -189,7 +195,7 @@
           <textarea
             id="quiz-desc"
             value={draftQuiz.description}
-            on:input={updateDescription}
+            oninput={updateDescription}
             class="textarea textarea-bordered h-24"
             placeholder="輸入測驗描述..."
           ></textarea>
@@ -201,7 +207,7 @@
       <h2 class="text-2xl font-bold">
         題目列表 ({draftQuiz.questions.length})
       </h2>
-      <button class="btn btn-primary" on:click={addQuestion}>
+      <button class="btn btn-primary" onclick={addQuestion}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5 mr-2"

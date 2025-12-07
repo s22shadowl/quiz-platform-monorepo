@@ -9,10 +9,10 @@
 
   import { connectionManager } from "$lib/connection"
 
-  let quizId: string
-  let copied = false
+  let quizId: string = $derived($page.params.id ?? "")
+  let copied = $state(false)
 
-  $: quizId = $page.params.id ?? ""
+  
 
   onMount(async () => {
     // Ensure we have the quiz loaded
@@ -86,7 +86,7 @@
   }
 </script>
 
-<svelte:window on:beforeunload={handleBeforeUnload} />
+<svelte:window onbeforeunload={handleBeforeUnload} />
 
 <div class="container mx-auto p-4">
   {#if $gameStore.quiz}
@@ -98,7 +98,7 @@
         {#if $connectionStore.peerId}
           <button
             class="btn btn-xs btn-ghost gap-2 mt-1"
-            on:click={copyRoomId}
+            onclick={copyRoomId}
             title="點擊複製"
           >
             <span class="text-base-content/60">房間 ID:</span>
@@ -111,7 +111,7 @@
       </div>
       <div class="flex items-center gap-2">
         {#if $gameStore.status === "playing"}
-          <button class="btn btn-warning btn-sm" on:click={togglePause}>
+          <button class="btn btn-warning btn-sm" onclick={togglePause}>
             {$gameStore.isPaused ? "繼續" : "暫停"}
           </button>
         {/if}
@@ -130,7 +130,7 @@
               <h2 class="card-title text-3xl mb-4">等待玩家中...</h2>
               <button
                 class="btn btn-primary btn-lg btn-wide"
-                on:click={startGame}>開始遊戲</button
+                onclick={startGame}>開始遊戲</button
               >
             </div>
           </div>
@@ -155,7 +155,7 @@
                 </h2>
                 {#if $gameStore.currentQuestion.mediaUrl}
                   <div class="mb-4">
-                    <!-- svelte-ignore a11y-missing-attribute -->
+                    <!-- svelte-ignore a11y_missing_attribute -->
                     <img
                       src={$gameStore.currentQuestion.mediaUrl}
                       class="max-h-64 rounded-lg mx-auto"
@@ -177,7 +177,7 @@
               <div class="card-actions justify-end mt-8">
                 <button
                   class="btn btn-secondary"
-                  on:click={gameStore.goToReview}>查看結果 (Review)</button
+                  onclick={gameStore.goToReview}>查看結果 (Review)</button
                 >
               </div>
             </div>
@@ -217,14 +217,14 @@
                               {:else}
                                 <button
                                   class="btn btn-sm btn-success"
-                                  on:click={() =>
+                                  onclick={() =>
                                     gameStore.gradeAnswer(player.id, true)}
                                 >
                                   正確
                                 </button>
                                 <button
                                   class="btn btn-sm btn-error"
-                                  on:click={() =>
+                                  onclick={() =>
                                     gameStore.gradeAnswer(player.id, false)}
                                 >
                                   錯誤
@@ -244,7 +244,7 @@
               {/if}
 
               <div class="card-actions justify-end mt-8">
-                <button class="btn btn-primary" on:click={nextQuestion}
+                <button class="btn btn-primary" onclick={nextQuestion}
                   >下一題</button
                 >
               </div>
@@ -254,7 +254,7 @@
           <div class="card bg-base-200 shadow-xl">
             <div class="card-body items-center text-center">
               <h2 class="card-title text-3xl mb-4">遊戲結束！</h2>
-              <button class="btn btn-primary" on:click={endGame}
+              <button class="btn btn-primary" onclick={endGame}
                 >回到選單</button
               >
             </div>

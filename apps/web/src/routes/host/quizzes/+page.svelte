@@ -42,7 +42,7 @@
     downloadAnchorNode.remove()
   }
 
-  let fileInput: HTMLInputElement
+  let fileInput: HTMLInputElement = $state()
 
   function triggerImport() {
     fileInput.click()
@@ -75,7 +75,7 @@
     <h1 class="text-3xl font-bold">我的測驗</h1>
     <div class="flex gap-2 items-center">
       <div class="tooltip tooltip-bottom" data-tip="支援 .json 格式的測驗檔案">
-        <button class="btn btn-outline" on:click={triggerImport}>
+        <button class="btn btn-outline" onclick={triggerImport}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -96,10 +96,10 @@
         accept=".json"
         class="hidden"
         bind:this={fileInput}
-        on:change={handleImport}
+        onchange={handleImport}
       />
       <a href="/host/history" class="btn btn-ghost">歷史紀錄</a>
-      <button class="btn btn-primary" on:click={createNewQuiz}>
+      <button class="btn btn-primary" onclick={createNewQuiz}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-6 w-6 mr-2"
@@ -158,12 +158,12 @@
                   class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
                 >
                   <li>
-                    <button on:click={() => exportQuiz(quiz)}>匯出 JSON</button>
+                    <button onclick={() => exportQuiz(quiz)}>匯出 JSON</button>
                   </li>
                   <li>
                     <button
                       class="text-error"
-                      on:click={() => deleteQuiz(quiz.id)}>刪除</button
+                      onclick={() => deleteQuiz(quiz.id)}>刪除</button
                     >
                   </li>
                 </ul>

@@ -2,8 +2,12 @@
   import { createEventDispatcher } from "svelte"
   import type { Question } from "$lib/types"
 
-  export let question: Question
-  export let index: number
+  interface Props {
+    question: Question
+    index: number
+  }
+
+  let { question, index }: Props = $props()
 
   const dispatch = createEventDispatcher<{
     update: Question
@@ -94,7 +98,7 @@
       <div class="flex gap-2">
         <button
           class="btn btn-square btn-ghost btn-sm"
-          on:click={() => dispatch("moveUp")}
+          onclick={() => dispatch("moveUp")}
           disabled={index === 1}
           title="上移"
         >
@@ -113,7 +117,7 @@
         </button>
         <button
           class="btn btn-square btn-ghost btn-sm"
-          on:click={() => dispatch("moveDown")}
+          onclick={() => dispatch("moveDown")}
           title="下移"
         >
           <svg
@@ -131,7 +135,7 @@
         </button>
         <button
           class="btn btn-square btn-ghost btn-sm text-error"
-          on:click={() => dispatch("delete")}
+          onclick={() => dispatch("delete")}
           title="刪除"
         >
           <svg
@@ -160,7 +164,7 @@
         id={`question-text-${question.id}`}
         type="text"
         value={question.text}
-        on:input={(e) => updateField("text", e.currentTarget.value)}
+        oninput={(e) => updateField("text", e.currentTarget.value)}
         class="input input-bordered font-semibold"
         placeholder="輸入題目..."
       />
@@ -175,7 +179,7 @@
         id={`question-type-${question.id}`}
         class="select select-bordered select-sm"
         value={question.type}
-        on:change={(e) => updateField("type", e.currentTarget.value)}
+        onchange={(e) => updateField("type", e.currentTarget.value)}
       >
         <option value="choice">單選題 (Choice)</option>
         <option value="multiple_choice">複選題 (Multiple Choice)</option>
@@ -192,7 +196,7 @@
         id={`media-url-${question.id}`}
         type="text"
         value={question.mediaUrl || ""}
-        on:input={(e) => updateField("mediaUrl", e.currentTarget.value)}
+        oninput={(e) => updateField("mediaUrl", e.currentTarget.value)}
         class="input input-bordered input-sm"
         placeholder="https://..."
       />
@@ -204,7 +208,7 @@
             src={question.mediaUrl}
             alt="Preview"
             class="max-h-full max-w-full object-contain"
-            on:error={handleImageError}
+            onerror={handleImageError}
           />
           <span class="absolute text-xs text-base-content/50 -z-10"
             >預覽圖片</span
@@ -223,7 +227,7 @@
           id={`time-limit-${question.id}`}
           class="select select-bordered select-sm"
           value={question.timeLimit}
-          on:change={(e) =>
+          onchange={(e) =>
             updateField("timeLimit", parseInt(e.currentTarget.value))}
         >
           <option value={10}>10秒</option>
@@ -244,7 +248,7 @@
           id={`points-${question.id}`}
           class="select select-bordered select-sm"
           value={question.points}
-          on:change={(e) =>
+          onchange={(e) =>
             updateField("points", parseInt(e.currentTarget.value))}
         >
           <option value={50}>50</option>
@@ -272,7 +276,7 @@
                 type="checkbox"
                 class="checkbox checkbox-primary"
                 checked={question.correctAnswers?.includes(option)}
-                on:change={() => toggleCorrectAnswer(option)}
+                onchange={() => toggleCorrectAnswer(option)}
               />
             {:else}
               <input
@@ -280,13 +284,13 @@
                 name={`correct-${question.id}`}
                 class="radio radio-primary"
                 checked={question.correctAnswer === option}
-                on:change={() => updateField("correctAnswer", option)}
+                onchange={() => updateField("correctAnswer", option)}
               />
             {/if}
             <input
               type="text"
               value={option}
-              on:input={(e) => updateOption(i, e.currentTarget.value)}
+              oninput={(e) => updateOption(i, e.currentTarget.value)}
               class="input input-bordered input-sm w-full"
               class:input-primary={question.type === "multiple_choice"
                 ? question.correctAnswers?.includes(option)
@@ -295,7 +299,8 @@
             <button
               class="btn btn-square btn-ghost btn-sm"
               disabled={question.options.length <= 2}
-              on:click={() => removeOption(i)}
+              onclick={() => removeOption(i)}
+              aria-label="移除選項"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -317,7 +322,7 @@
         {#if question.options.length < 6}
           <button
             class="btn btn-ghost btn-sm btn-block mt-2 border-dashed border-2 border-base-300"
-            on:click={addOption}
+            onclick={addOption}
           >
             + 新增選項
           </button>

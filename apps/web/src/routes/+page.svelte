@@ -47,13 +47,14 @@
   <div class="fixed bottom-4 right-4">
     <button
       class="btn btn-circle btn-ghost bg-base-100 shadow-lg"
-      on:click={() => {
+      onclick={() => {
         const modal = document.getElementById("project_info_modal")
         if (modal && "showModal" in modal) {
           // @ts-expect-error - showModal is not in HTMLElement type definition
           modal.showModal()
         }
       }}
+      aria-label="專案資訊"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

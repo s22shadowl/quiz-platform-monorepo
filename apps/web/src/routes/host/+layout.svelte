@@ -1,5 +1,10 @@
-<script>
-  import { page } from '$app/stores';
+<script lang="ts">
+  import { page } from '$app/state';
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
 </script>
 
 <div class="drawer lg:drawer-open">
@@ -17,7 +22,7 @@
     
     <!-- Page Content -->
     <div class="p-4">
-      <slot />
+      {@render children?.()}
     </div>
   </div> 
   
@@ -26,8 +31,8 @@
     <ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
       <!-- Sidebar content here -->
       <li class="mb-4 text-xl font-bold px-4">Host Control</li>
-      <li><a href="/host/quizzes" class:active={$page.url.pathname.startsWith('/host/quizzes')}>My Quizzes</a></li>
-      <li><a href="/host/history" class:active={$page.url.pathname.startsWith('/host/history')}>History</a></li>
+      <li><a href="/host/quizzes" class:active={page.url.pathname.startsWith('/host/quizzes')}>My Quizzes</a></li>
+      <li><a href="/host/history" class:active={page.url.pathname.startsWith('/host/history')}>History</a></li>
       <div class="divider"></div>
       <li><a href="/">Back to Home</a></li>
     </ul>

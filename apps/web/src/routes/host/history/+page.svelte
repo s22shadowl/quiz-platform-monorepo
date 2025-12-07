@@ -3,7 +3,7 @@
   import { storage } from "$lib/storage"
   import type { GameHistory } from "$lib/types"
 
-  let history: GameHistory[] = []
+  let history: GameHistory[] = $state([])
 
   onMount(() => {
     history = storage.getHistory().sort((a, b) => b.playedAt - a.playedAt)

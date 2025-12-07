@@ -1,14 +1,18 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { onMount } from "svelte"
   import { connectionManager } from "$lib/connection"
   import { connectionStore } from "$lib/stores/connectionStore"
   import { gameStore } from "$lib/stores/gameStore"
 
-  let roomId = ""
-  let copied = false
+  let roomId = $state("")
+  let copied = $state(false)
 
-  $: roomId = $connectionStore.peerId || "Initializing..."
-  $: players = $gameStore.players
+  run(() => {
+    roomId = $connectionStore.peerId || "Initializing..."
+  });
+  let players = $derived($gameStore.players)
 
   onMount(async () => {
     try {
@@ -59,7 +63,7 @@
                 readonly
                 class="input input-bordered join-item w-full font-mono bg-base-200"
               />
-              <button class="btn btn-primary join-item" on:click={copyRoomId}>
+              <button class="btn btn-primary join-item" onclick={copyRoomId}>
                 {copied ? "已複製！" : "複製"}
               </button>
             </div>
@@ -158,7 +162,7 @@
     <button
       class="btn btn-primary btn-lg w-full"
       disabled={players.length === 0}
-      on:click={startGame}
+      onclick={startGame}
     >
       開始遊戲
     </button>
